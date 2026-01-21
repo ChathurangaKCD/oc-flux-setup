@@ -27,8 +27,5 @@ spec:
   values:
     openSearch:
       enabled: true
-      standalone: true
     openSearchCluster:
       enabled: false
-    otelCollector:
-      enabled: true
