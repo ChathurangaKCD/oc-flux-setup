@@ -14,10 +14,10 @@ spec:
         namespace: openchoreo-data-plane
         key: ca.crt
   gateway:
-    publicVirtualHost: "*.openchoreoapis.dev.local"
+    publicVirtualHost: "*.openchoreoapis.test"
     publicHTTPPort: 19080
     publicHTTPSPort: 19443
-    organizationVirtualHost: "*.org.openchoreoapis.dev.local"
+    organizationVirtualHost: "*.org.openchoreoapis.test"
     organizationHTTPPort: 19080
     organizationHTTPSPort: 19443
 ---

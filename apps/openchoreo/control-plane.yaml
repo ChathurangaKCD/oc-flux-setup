@@ -26,7 +26,7 @@ spec:
       retries: 3
   values:
     global:
-      baseDomain: openchoreo.dev.local
+      baseDomain: openchoreo.test
       port: ":8080"
     gateway:
       httpPort: 80
@@ -36,8 +36,8 @@ spec:
     thunder:
       configuration:
         server:
-          publicUrl: http://thunder.openchoreo.dev.local:8080
+          publicUrl: http://thunder.openchoreo.test:8080
         gateClient:
-          hostname: thunder.openchoreo.dev.local
+          hostname: thunder.openchoreo.test
           port: 8080
           scheme: "http"
