@@ -1,0 +1,40 @@
+---
+# Self-signed ClusterIssuer for TLS certificates
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: openchoreo-selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+# TLS Certificate for control plane gateway
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openchoreo-gateway-tls
+  namespace: openchoreo-control-plane
+spec:
+  secretName: openchoreo-gateway-tls
+  issuerRef:
+    name: openchoreo-selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.openchoreo.localhost"
+    - "openchoreo.localhost"
+    - "api.openchoreo.localhost"
+    - "thunder.openchoreo.localhost"
+---
+# TLS Certificate for data plane gateway
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openchoreo-dataplane-tls
+  namespace: openchoreo-data-plane
+spec:
+  secretName: openchoreo-dataplane-tls
+  issuerRef:
+    name: openchoreo-selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.openchoreoapis.localhost"
+    - "openchoreoapis.localhost"

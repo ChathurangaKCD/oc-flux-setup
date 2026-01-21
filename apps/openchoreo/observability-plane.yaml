@@ -1,0 +1,51 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openchoreo-observability-plane
+  namespace: openchoreo-observability-plane
+spec:
+  interval: 30m
+  dependsOn:
+    - name: openchoreo-control-plane
+      namespace: openchoreo-control-plane
+  chart:
+    spec:
+      chart: openchoreo-observability-plane
+      version: "0.11.0"
+      sourceRef:
+        kind: HelmRepository
+        name: openchoreo
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    openSearch:
+      enabled: true
+      standalone: true
+    openSearchCluster:
+      enabled: false
+    otelCollector:
+      enabled: true
+---
+# ObservabilityPlane CR - registered with control plane
+apiVersion: core.openchoreo.dev/v1alpha1
+kind: ObservabilityPlane
+metadata:
+  name: default
+  namespace: openchoreo-control-plane
+spec:
+  displayName: Default Observability Plane
+  kubernetesClusterRef:
+    name: in-cluster
+    namespace: openchoreo-control-plane
+  namespaceRef:
+    name: openchoreo-observability-plane
+  openSearch:
+    endpoint: http://opensearch.openchoreo-observability-plane.svc:9200
+    indexPrefix: openchoreo

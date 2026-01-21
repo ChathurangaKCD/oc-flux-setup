@@ -1,0 +1,43 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openchoreo-control-plane
+  namespace: openchoreo-control-plane
+spec:
+  interval: 30m
+  dependsOn:
+    - name: cert-manager
+      namespace: cert-manager
+  chart:
+    spec:
+      chart: openchoreo-control-plane
+      version: "0.11.0"
+      sourceRef:
+        kind: HelmRepository
+        name: openchoreo
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    global:
+      baseDomain: openchoreo.localhost
+      port: ":8080"
+    gateway:
+      httpPort: 80
+      httpsPort: 443
+      envoy:
+        mountTmpVolume: true
+    thunder:
+      configuration:
+        server:
+          publicUrl: http://thunder.openchoreo.localhost:8080
+        gateClient:
+          hostname: thunder.openchoreo.localhost
+          port: 8080
+          scheme: "http"

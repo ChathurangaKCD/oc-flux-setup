@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-control-plane
+  labels:
+    toolkit.fluxcd.io/tenant: openchoreo
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-data-plane
+  labels:
+    toolkit.fluxcd.io/tenant: openchoreo
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-build-plane
+  labels:
+    toolkit.fluxcd.io/tenant: openchoreo
+# Observability plane namespace disabled for now
+# ---
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: openchoreo-observability-plane
+#   labels:
+#     toolkit.fluxcd.io/tenant: openchoreo
