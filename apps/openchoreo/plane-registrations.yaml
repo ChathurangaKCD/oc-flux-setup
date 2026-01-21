@@ -1,32 +1,35 @@
 ---
-# DataPlane CR - registered with control plane
+# DataPlane CR - registers data plane with control plane
 apiVersion: openchoreo.dev/v1alpha1
 kind: DataPlane
 metadata:
   name: default
   namespace: openchoreo-control-plane
 spec:
-  displayName: Default Data Plane
-  gatewayEndpoint: http://openchoreoapis.localhost:19080
-  kubernetesClusterRef:
-    name: in-cluster
-    namespace: openchoreo-control-plane
-  namespaceRef:
-    name: openchoreo-data-plane
+  clusterAgent:
+    clientCA:
+      secretRef:
+        name: cluster-gateway-ca
+        namespace: openchoreo-data-plane
+        key: ca.crt
+  gateway:
+    publicVirtualHost: "*.openchoreoapis.localhost"
+    publicHTTPPort: 19080
+    publicHTTPSPort: 19443
+    organizationVirtualHost: "*.org.openchoreoapis.localhost"
+    organizationHTTPPort: 19080
+    organizationHTTPSPort: 19443
 ---
-# BuildPlane CR - registered with control plane
+# BuildPlane CR - registers build plane with control plane
 apiVersion: openchoreo.dev/v1alpha1
 kind: BuildPlane
 metadata:
   name: default
   namespace: openchoreo-control-plane
 spec:
-  displayName: Default Build Plane
-  kubernetesClusterRef:
-    name: in-cluster
-    namespace: openchoreo-control-plane
-  namespaceRef:
-    name: openchoreo-build-plane
-  registry:
-    endpoint: host.k3d.internal:10082
-    insecure: true
+  clusterAgent:
+    clientCA:
+      secretRef:
+        name: cluster-gateway-ca
+        namespace: openchoreo-build-plane
+        key: ca.crt
