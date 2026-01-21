@@ -29,11 +29,11 @@ OpenChoreo runs on k3d (k3s in Docker). Traffic flows through multiple layers:
 
 ## Traffic Flow Example
 
-Request: `http://api.openchoreo.localhost:8080`
+Request: `http://api.openchoreo.dev.local:8080`
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Browser: http://api.openchoreo.localhost:8080                              │
+│  Browser: http://api.openchoreo.dev.local:8080                              │
 │  (DNS resolves to VM IP via /etc/hosts)                                     │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
@@ -71,9 +71,9 @@ Request: `http://api.openchoreo.localhost:8080`
 │     ┌────────────────────────────────┬─────────────────────┬──────┐         │
 │     │ HOSTNAME                       │ BACKEND SERVICE     │ PORT │         │
 │     ├────────────────────────────────┼─────────────────────┼──────┤         │
-│     │ api.openchoreo.localhost       │ openchoreo-api      │ 8080 │ ◄───    │
-│     │ openchoreo.localhost           │ openchoreo-ui       │ 7007 │         │
-│     │ thunder.openchoreo.localhost   │ thunder-service     │ 8090 │         │
+│     │ api.openchoreo.dev.local       │ openchoreo-api      │ 8080 │ ◄───    │
+│     │ openchoreo.dev.local           │ openchoreo-ui       │ 7007 │         │
+│     │ thunder.openchoreo.dev.local   │ thunder-service     │ 8090 │         │
 │     └────────────────────────────────┴─────────────────────┴──────┘         │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
@@ -136,15 +136,15 @@ After adding hosts entries pointing to the VM IP:
 
 | URL | Service |
 |-----|---------|
-| http://openchoreo.localhost:8080 | Backstage UI (Console) |
-| http://api.openchoreo.localhost:8080 | OpenChoreo API |
-| http://thunder.openchoreo.localhost:8080 | Thunder Service |
-| http://*.openchoreoapis.localhost:19080 | Deployed Workloads |
+| http://openchoreo.dev.local:8080 | Backstage UI (Console) |
+| http://api.openchoreo.dev.local:8080 | OpenChoreo API |
+| http://thunder.openchoreo.dev.local:8080 | Thunder Service |
+| http://*.openchoreoapis.dev.local:19080 | Deployed Workloads |
 
 ### Local /etc/hosts Entry
 
 ```
-<VM_IP> openchoreo.localhost api.openchoreo.localhost thunder.openchoreo.localhost
+<VM_IP> openchoreo.dev.local api.openchoreo.dev.local thunder.openchoreo.dev.local
 ```
 
 ## Debugging Commands
@@ -163,11 +163,11 @@ kubectl get httproute -n openchoreo-control-plane
 kubectl logs -n openchoreo-control-plane -l app.kubernetes.io/name=gateway-default
 
 # Test routing from inside the VM
-curl -s http://localhost:8080/ -H "Host: openchoreo.localhost" | head -5
+curl -s http://localhost:8080/ -H "Host: openchoreo.dev.local" | head -5
 
 # Port-forward to test gateway directly
 kubectl port-forward -n openchoreo-control-plane svc/gateway-default 9999:80
-curl -s http://localhost:9999/ -H "Host: api.openchoreo.localhost"
+curl -s http://localhost:9999/ -H "Host: api.openchoreo.dev.local"
 
 # Check k3d containers (requires docker access)
 docker ps | grep k3d
