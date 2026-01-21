@@ -1,9 +1,10 @@
 ---
 # DataPlane CR - registers data plane with control plane
+# Name must match cluster-agent certificate CN (default-dataplane)
 apiVersion: openchoreo.dev/v1alpha1
 kind: DataPlane
 metadata:
-  name: default
+  name: default-dataplane
   namespace: openchoreo-control-plane
 spec:
   clusterAgent:
@@ -21,10 +22,11 @@ spec:
     organizationHTTPSPort: 19443
 ---
 # BuildPlane CR - registers build plane with control plane
+# Name must match cluster-agent certificate CN (default-buildplane)
 apiVersion: openchoreo.dev/v1alpha1
 kind: BuildPlane
 metadata:
-  name: default
+  name: default-buildplane
   namespace: openchoreo-control-plane
 spec:
   clusterAgent:
