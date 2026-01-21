@@ -14,12 +14,13 @@ spec:
         namespace: openchoreo-data-plane
         key: ca.crt
   gateway:
+    # External port 9080 maps to internal 19080 via k3d loadbalancer
     publicVirtualHost: "*.openchoreoapis.test"
-    publicHTTPPort: 19080
-    publicHTTPSPort: 19443
+    publicHTTPPort: 9080
+    publicHTTPSPort: 9443
     organizationVirtualHost: "*.org.openchoreoapis.test"
-    organizationHTTPPort: 19080
-    organizationHTTPSPort: 19443
+    organizationHTTPPort: 9080
+    organizationHTTPSPort: 9443
 ---
 # BuildPlane CR - registers build plane with control plane
 # Name must match cluster-agent certificate CN (default-buildplane)

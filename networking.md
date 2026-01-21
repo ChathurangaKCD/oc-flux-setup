@@ -15,17 +15,14 @@ OpenChoreo runs on k3d (k3s in Docker). Traffic flows through multiple layers:
 
 ## Port Mappings
 
+This VM only exposes ports 8080 and 9080 externally.
+
 | Host Port | Cluster Port | Purpose |
 |-----------|--------------|---------|
 | 8080 | 80 | Control Plane HTTP (UI, API) |
-| 8443 | 443 | Control Plane HTTPS |
-| 19080 | 19080 | Data Plane HTTP (deployed workloads) |
-| 19443 | 19443 | Data Plane HTTPS |
-| 10081 | 2746 | Argo Workflows UI |
-| 10082 | 5000 | Container Registry |
-| 11080 | 8080 | Observability API |
-| 11081 | 5601 | OpenSearch Dashboard |
-| 11082 | 9200 | OpenSearch API |
+| 9080 | 19080 | Data Plane HTTP (deployed workloads) |
+
+See `k3d-config.yaml` for the full cluster configuration.
 
 ## Traffic Flow Example
 
@@ -95,7 +92,7 @@ Request: `http://api.openchoreo.test:8080`
 │  │                                                                     │    │
 │  │  ┌─────────────────────────────────────────────────────────────┐    │    │
 │  │  │  Container: k3d-openchoreo-serverlb                         │    │    │
-│  │  │  - Binds to host ports: 8080, 8443, 19080, 19443, etc.      │    │    │
+│  │  │  - Binds to host ports: 8080, 9080                          │    │    │
 │  │  │  - Forwards traffic to k3d-openchoreo-server-0              │    │    │
 │  │  │  - Simple TCP proxy (nginx-based)                           │    │    │
 │  │  └──────────────────────────┬──────────────────────────────────┘    │    │
@@ -139,7 +136,7 @@ After adding hosts entries pointing to the VM IP:
 | http://openchoreo.test:8080 | Backstage UI (Console) |
 | http://api.openchoreo.test:8080 | OpenChoreo API |
 | http://thunder.openchoreo.test:8080 | Thunder Service |
-| http://*.openchoreoapis.test:19080 | Deployed Workloads |
+| http://*.openchoreoapis.test:9080 | Deployed Workloads |
 
 ### Local /etc/hosts Entry
 
@@ -147,11 +144,13 @@ After adding hosts entries pointing to the VM IP:
 <VM_IP> openchoreo.test api.openchoreo.test thunder.openchoreo.test
 ```
 
+**Default credentials:** `admin@openchoreo.dev` / `Admin@123`
+
 ## Debugging Commands
 
 ```bash
 # Check what's listening on host ports
-ss -tlnp | grep -E "8080|19080"
+ss -tlnp | grep -E "8080|9080"
 
 # Check gateway service
 kubectl get svc gateway-default -n openchoreo-control-plane

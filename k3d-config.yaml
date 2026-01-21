@@ -1,0 +1,51 @@
+# k3d cluster configuration for OpenChoreo on VM with limited port exposure
+# This config matches the current k3d cluster setup on the VM
+#
+# To recreate the cluster:
+#   k3d cluster delete openchoreo
+#   k3d cluster create --config k3d-config.yaml
+#
+# Note: After cluster creation, bootstrap Flux:
+#   flux bootstrap github --owner=<owner> --repository=oc-flux-setup --path=clusters/openchoreo-dev
+
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: openchoreo
+image: rancher/k3s:v1.32.9-k3s1
+servers: 1
+agents: 0
+kubeAPI:
+  hostPort: "6550"
+
+# VM only exposes ports 8080 and 9080 externally
+ports:
+  # Control Plane HTTP (UI, API, Thunder)
+  # Maps host:8080 -> cluster:80 (gateway-default LoadBalancer)
+  - port: 8080:80
+    nodeFilters:
+      - loadbalancer
+  # Data Plane HTTP (deployed workloads)
+  # Maps host:9080 -> cluster:19080 (data-plane gateway-default LoadBalancer)
+  - port: 9080:19080
+    nodeFilters:
+      - loadbalancer
+
+options:
+  k3s:
+    extraArgs:
+      # Add host.k3d.internal to API server TLS certificate SANs
+      - arg: "--tls-san=host.k3d.internal"
+        nodeFilters:
+          - server:*
+      # Configure kubelet eviction thresholds to prevent resource exhaustion
+      - arg: "--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%"
+        nodeFilters:
+          - server:*
+      - arg: "--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%"
+        nodeFilters:
+          - server:*
+      # Disable Traefik to avoid conflicts with OpenChoreo Gateway controller
+      - arg: "--disable=traefik"
+        nodeFilters:
+          - server:*
