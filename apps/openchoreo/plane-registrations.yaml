@@ -35,3 +35,19 @@ spec:
         name: cluster-gateway-ca
         namespace: openchoreo-build-plane
         key: ca.crt
+---
+# ObservabilityPlane CR - registers observability plane with control plane
+# Name must match cluster-agent certificate CN (default-observabilityplane)
+apiVersion: openchoreo.dev/v1alpha1
+kind: ObservabilityPlane
+metadata:
+  name: default-observabilityplane
+  namespace: openchoreo-control-plane
+spec:
+  clusterAgent:
+    clientCA:
+      secretRef:
+        name: cluster-gateway-ca
+        namespace: openchoreo-observability-plane
+        key: ca.crt
+  observerURL: http://observer.openchoreo-observability-plane.svc:8080

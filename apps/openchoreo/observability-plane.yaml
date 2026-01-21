@@ -32,20 +32,3 @@ spec:
       enabled: false
     otelCollector:
       enabled: true
----
-# ObservabilityPlane CR - registered with control plane
-apiVersion: core.openchoreo.dev/v1alpha1
-kind: ObservabilityPlane
-metadata:
-  name: default
-  namespace: openchoreo-control-plane
-spec:
-  displayName: Default Observability Plane
-  kubernetesClusterRef:
-    name: in-cluster
-    namespace: openchoreo-control-plane
-  namespaceRef:
-    name: openchoreo-observability-plane
-  openSearch:
-    endpoint: http://opensearch.openchoreo-observability-plane.svc:9200
-    indexPrefix: openchoreo

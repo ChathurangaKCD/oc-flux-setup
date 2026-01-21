@@ -6,4 +6,4 @@ resources:
   - control-plane.yaml
   - data-plane.yaml
   - build-plane.yaml
-  # - observability-plane.yaml  # Disabled for now
+  - observability-plane.yaml
