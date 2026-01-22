@@ -1,5 +1,10 @@
 # k3d cluster configuration for OpenChoreo on VM with limited port exposure
-# This config matches the current k3d cluster setup on the VM
+#
+# NOTE: This is a RECONSTRUCTED config based on observed port mappings.
+# The original config used to create this cluster is not available.
+# Key observations:
+#   - Only ports 8080, 9080, 6550 are exposed on the VM
+#   - Traefik was NOT disabled (had to delete manually)
 #
 # To recreate the cluster:
 #   k3d cluster delete openchoreo
