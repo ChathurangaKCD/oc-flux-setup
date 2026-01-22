@@ -26,7 +26,7 @@ spec:
       retries: 3
   values:
     argo-workflows:
-      enabled: true
+      enabled: false
     registry:
       endpoint: host.k3d.internal:10082
       insecure: true
