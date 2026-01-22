@@ -29,5 +29,6 @@ spec:
       defaultResources:
         enabled: true
         registry:
-          endpoint: host.k3d.internal:10082
+          # Use internal service endpoint (port 10082 not exposed on VM)
+          endpoint: registry.openchoreo-build-plane.svc.cluster.local:5000
           tlsVerify: false
