@@ -25,10 +25,27 @@ spec:
     remediation:
       retries: 3
   values:
+    argo-workflows:
+      server:
+        # Argo Workflows UI is enabled for testing/development purposes
+        enabled: true
+        serviceType: LoadBalancer
+        servicePort: 2746
+        authModes:
+          - server
+    # Container Registry configuration for single-cluster
+    registry:
+      service:
+        type: LoadBalancer
+        port: 5000
+    # All components access via host.k3d.internal:10082
     global:
       defaultResources:
-        enabled: true
         registry:
-          # Use internal service endpoint (port 10082 not exposed on VM)
-          endpoint: registry.openchoreo-build-plane.svc.cluster.local:5000
-          tlsVerify: false
+          endpoint: "host.k3d.internal:10082"
+    # Disable External Secrets since it's already in the Data Plane (single cluster)
+    external-secrets:
+      enabled: false
+    # Disable Fluent Bit for Build Plane in single-cluster mode
+    fluent-bit:
+      enabled: false

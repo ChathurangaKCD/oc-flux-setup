@@ -28,11 +28,13 @@ spec:
     gateway:
       httpPort: 19080
       httpsPort: 19443
-      envoy:
-        mountTmpVolume: true
       selfSignedIssuer:
         enabled: false
-    external-secrets:
-      enabled: false
+      envoy:
+        mountTmpVolume: true
+    # Reuse the existing control plane's cluster gateway controller
     gatewayController:
       enabled: false
+    # External Secrets Operator configuration
+    external-secrets:
+      enabled: true
