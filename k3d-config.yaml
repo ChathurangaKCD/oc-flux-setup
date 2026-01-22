@@ -1,26 +1,6 @@
-# k3d cluster configuration for OpenChoreo on VM with limited port exposure
-#
-# NOTE: This config is RECONSTRUCTED from the running cluster.
-# Source of truth: kubectl get node k3d-openchoreo-server-0 -o jsonpath="{.metadata.annotations.k3s\.io/node-args}"
-#
-# ORIGINAL k3s args (from node annotation):
-#   ["server", "--tls-san", "host.k3d.internal",
-#    "--kubelet-arg", "eviction-hard=imagefs.available<1%,nodefs.available<1%",
-#    "--kubelet-arg", "eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%",
-#    "--tls-san", "0.0.0.0", "--tls-san", "k3d-openchoreo-serverlb"]
-#
-# Key observations:
-#   - Ports exposed on VM: 8080, 9080, 6550 (from: ss -tlnp)
-#   - Traefik was NOT disabled in original (--disable=traefik missing)
-#   - Traefik had to be deleted manually: kubectl delete deployment traefik -n kube-system
-#   - Cluster created: 2025-12-03 (49+ days old)
-#
-# To recreate the cluster:
-#   k3d cluster delete openchoreo
-#   k3d cluster create --config k3d-config.yaml
-#
-# After cluster creation, bootstrap Flux:
-#   flux bootstrap github --owner=<owner> --repository=oc-flux-setup --path=clusters/openchoreo-dev
+# k3d cluster configuration for OpenChoreo on VM
+# Based on: openchoreo3/install/k3d/single-cluster/config.yaml
+# VM-specific change: Only ports 8080 and 9080 are exposed externally
 
 apiVersion: k3d.io/v1alpha5
 kind: Simple
@@ -33,6 +13,7 @@ kubeAPI:
   hostPort: "6550"
 
 # VM only exposes ports 8080 and 9080 externally
+# Other planes are accessible only within the cluster
 ports:
   # Control Plane HTTP (UI, API, Thunder)
   # Maps host:8080 -> cluster:80 (gateway-default LoadBalancer)
@@ -41,6 +22,7 @@ ports:
       - loadbalancer
   # Data Plane HTTP (deployed workloads)
   # Maps host:9080 -> cluster:19080 (data-plane gateway-default LoadBalancer)
+  # Note: Official config uses 19080:19080, VM remaps to 9080:19080
   - port: 9080:19080
     nodeFilters:
       - loadbalancer
@@ -48,30 +30,26 @@ ports:
 options:
   k3s:
     extraArgs:
-      # Original args from node annotation
+      # Add host.k3d.internal to API server TLS certificate SANs.
+      # This allows consistent DataPlane configuration across single and multi-cluster setups
+      # where Control Plane pods can access the API server via host.k3d.internal:6550
       - arg: "--tls-san=host.k3d.internal"
         nodeFilters:
           - server:*
-      - arg: "--tls-san=0.0.0.0"
-        nodeFilters:
-          - server:*
-      - arg: "--tls-san=k3d-openchoreo-serverlb"
-        nodeFilters:
-          - server:*
+      # Configure kubelet eviction thresholds to prevent resource exhaustion
       - arg: "--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%"
         nodeFilters:
           - server:*
       - arg: "--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%"
         nodeFilters:
           - server:*
-      # RECOMMENDED: Disable Traefik (was NOT in original, had to delete manually)
+      # Disable Traefik to avoid conflicts with OpenChoreo Gateway controller
       - arg: "--disable=traefik"
         nodeFilters:
           - server:*
 
 # Configure insecure registries for HTTP access
 # Allows kubelet to pull images from Build Plane registry via HTTP
-# Note: Registry port 10082 is NOT exposed on VM, only accessible internally
 registries:
   config: |
     mirrors:
