@@ -7,3 +7,4 @@ resources:
   - data-plane.yaml
   - build-plane.yaml
   - observability-plane.yaml
+  - plane-registrations.yaml
