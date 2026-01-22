@@ -33,6 +33,6 @@ spec:
       selfSignedIssuer:
         enabled: false
     external-secrets:
-      enabled: true
+      enabled: false
     gatewayController:
       enabled: false
