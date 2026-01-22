@@ -7,18 +7,48 @@ servers: 1
 agents: 0
 kubeAPI:
   hostPort: "6550"
-# VM only exposes ports 8080 and 9080 externally
-# Compared to official config: 19080->9080, other ports removed
+# VM note: Only ports 8080 and 9080 are exposed externally on the VM
+# Other ports are accessible only from within the VM
 ports:
   # Control Plane uses port range 8xxx
   # HTTP traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 80)
   - port: 8080:80
     nodeFilters:
       - loadbalancer
+  # HTTPS traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 443)
+  - port: 8443:443
+    nodeFilters:
+      - loadbalancer
   # Data Plane uses port range 19xxx (matches kind and other cluster setups)
   # HTTP traffic to workloads via Gateway
-  # VM change: 9080 instead of 19080 (VM constraint)
+  # VM change: 9080 instead of 19080 (VM external port constraint)
   - port: 9080:19080
+    nodeFilters:
+      - loadbalancer
+  # HTTPS traffic to workloads via Gateway
+  - port: 19443:19443
+    nodeFilters:
+      - loadbalancer
+  # Build Plane uses port range 10xxx
+  # Argo Workflows UI for development testing
+  - port: 10081:2746
+    nodeFilters:
+      - loadbalancer
+  # Container Registry for storing built images
+  - port: 10082:5000
+    nodeFilters:
+      - loadbalancer
+  # Observability Plane uses port range 11xxx
+  # Observer API
+  - port: 11080:8080
+    nodeFilters:
+      - loadbalancer
+  # OpenSearch Dashboard
+  - port: 11081:5601
+    nodeFilters:
+      - loadbalancer
+  # OpenSearch API for Fluent Bit data pushing
+  - port: 11082:9200
     nodeFilters:
       - loadbalancer
 options:
