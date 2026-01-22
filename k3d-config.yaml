@@ -1,7 +1,3 @@
-# k3d cluster configuration for OpenChoreo on VM
-# Based on: openchoreo3/install/k3d/single-cluster/config.yaml
-# VM-specific change: Only ports 8080 and 9080 are exposed externally
-
 apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
@@ -11,22 +7,20 @@ servers: 1
 agents: 0
 kubeAPI:
   hostPort: "6550"
-
 # VM only exposes ports 8080 and 9080 externally
-# Other planes are accessible only within the cluster
+# Compared to official config: 19080->9080, other ports removed
 ports:
-  # Control Plane HTTP (UI, API, Thunder)
-  # Maps host:8080 -> cluster:80 (gateway-default LoadBalancer)
+  # Control Plane uses port range 8xxx
+  # HTTP traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 80)
   - port: 8080:80
     nodeFilters:
       - loadbalancer
-  # Data Plane HTTP (deployed workloads)
-  # Maps host:9080 -> cluster:19080 (data-plane gateway-default LoadBalancer)
-  # Note: Official config uses 19080:19080, VM remaps to 9080:19080
+  # Data Plane uses port range 19xxx (matches kind and other cluster setups)
+  # HTTP traffic to workloads via Gateway
+  # VM change: 9080 instead of 19080 (VM constraint)
   - port: 9080:19080
     nodeFilters:
       - loadbalancer
-
 options:
   k3s:
     extraArgs:
@@ -47,7 +41,6 @@ options:
       - arg: "--disable=traefik"
         nodeFilters:
           - server:*
-
 # Configure insecure registries for HTTP access
 # Allows kubelet to pull images from Build Plane registry via HTTP
 registries:
