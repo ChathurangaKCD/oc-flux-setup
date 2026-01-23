@@ -7,4 +7,5 @@ resources:
   - data-plane.yaml
   - build-plane.yaml
   - observability-plane.yaml
-  - plane-registrations.yaml
+  # plane-registrations.yaml moved to separate Flux Kustomization
+  # to ensure CRDs exist before plane CRs are created

@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - ../../infrastructure
   - ../../apps/openchoreo
+  - plane-crs-kustomization.yaml
