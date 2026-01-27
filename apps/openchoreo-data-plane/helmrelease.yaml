@@ -22,7 +22,6 @@ spec:
     # Retry on CRD timing issues (external-secrets CRDs installed by chart dependencies)
     remediation:
       retries: 3
-      retryInterval: 1m
       remediateLastFailure: true
   upgrade:
     remediation:
