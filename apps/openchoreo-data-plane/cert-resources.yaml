@@ -1,0 +1,15 @@
+---
+# TLS Certificate for data plane gateway
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openchoreo-dataplane-tls
+  namespace: openchoreo-data-plane
+spec:
+  secretName: openchoreo-dataplane-tls
+  issuerRef:
+    name: openchoreo-selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.openchoreoapis.localhost"
+    - "openchoreoapis.localhost"

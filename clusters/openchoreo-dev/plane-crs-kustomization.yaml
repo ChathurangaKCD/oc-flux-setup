@@ -11,11 +11,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  # Wait for control-plane HelmRelease to be ready (CRDs exist)
+  # Wait for control-plane Kustomization (which waits for control-plane HelmRelease)
+  # This ensures OpenChoreo CRDs are installed before applying plane CRs
   dependsOn:
-    - name: flux-system
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: openchoreo-control-plane
-      namespace: openchoreo-control-plane
+    - name: openchoreo-control-plane

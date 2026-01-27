@@ -1,0 +1,20 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-data-plane
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./apps/openchoreo-data-plane
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: openchoreo-control-plane  # wait for control-plane (CRDs installed)
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: openchoreo-data-plane
+      namespace: openchoreo-data-plane
