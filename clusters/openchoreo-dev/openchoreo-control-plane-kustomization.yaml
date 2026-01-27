@@ -12,7 +12,7 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: flux-system  # wait for infrastructure (cert-manager)
+    - name: infrastructure  # wait for cert-manager to be healthy
   # Wait for control-plane HelmRelease to be healthy before marking this Kustomization as Ready
   # This ensures OpenChoreo CRDs are installed before dependent Kustomizations run
   healthChecks:
