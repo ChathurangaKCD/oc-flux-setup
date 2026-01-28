@@ -21,7 +21,7 @@ spec:
     name: default
   gateway:
     organizationVirtualHost: openchoreoapis.internal
-    publicVirtualHost: openchoreoapis.localhost
+    publicVirtualHost: openchoreovm-apis.localhost
   observabilityPlaneRef: default
 ---
 # BuildPlane CR - registers build plane with control plane
