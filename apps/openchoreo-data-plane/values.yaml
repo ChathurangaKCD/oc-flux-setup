@@ -1,0 +1,20 @@
+# Helm values for OpenChoreo Data Plane
+
+# Gateway configuration for single-cluster setup
+gateway:
+  httpPort: 19080
+  httpsPort: 19443
+  # Use self-signed issuer in control plane for TLS certs
+  selfSignedIssuer:
+    enabled: false
+  envoy:
+    # Mount /tmp as emptyDir to fix Envoy temp file issues on macOS Docker/Colima
+    mountTmpVolume: true
+
+# Reuse the existing control plane's cluster gateway controller
+gatewayController:
+  enabled: false
+
+# External Secrets Operator configuration
+external-secrets:
+  enabled: true

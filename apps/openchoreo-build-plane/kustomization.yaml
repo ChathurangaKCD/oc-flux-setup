@@ -3,4 +3,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
+  - registry-helmrelease.yaml
   - helmrelease.yaml
+configMapGenerator:
+  - name: openchoreo-build-plane-values
+    namespace: openchoreo-build-plane
+    files:
+      - values.yaml
+generatorOptions:
+  disableNameSuffixHash: true

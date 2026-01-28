@@ -5,3 +5,10 @@ resources:
   - namespace.yaml
   - cert-resources.yaml
   - helmrelease.yaml
+configMapGenerator:
+  - name: openchoreo-data-plane-values
+    namespace: openchoreo-data-plane
+    files:
+      - values.yaml
+generatorOptions:
+  disableNameSuffixHash: true

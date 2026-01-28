@@ -24,28 +24,7 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  values:
-    global:
-      # VM uses .test TLD (official uses .localhost)
-      baseDomain: openchoreo.test
-      port: ":8080"
-    # Enable cluster gateway for agent-based data plane communication
-    clusterGateway:
-      enabled: true
-    # Controller Manager cluster gateway configuration
-    controllerManager:
-      clusterGateway:
-        enabled: true
-    thunder:
-      configuration:
-        server:
-          publicUrl: "http://thunder.openchoreo.test:8080"
-        gateClient:
-          hostname: "thunder.openchoreo.test"
-          port: 8080
-          scheme: "http"
-    gateway:
-      enabled: true
-      envoy:
-        enabled: true
-        mountTmpVolume: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: openchoreo-control-plane-values
+      valuesKey: values.yaml

@@ -26,17 +26,7 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  values:
-    gateway:
-      httpPort: 19080
-      httpsPort: 19443
-      selfSignedIssuer:
-        enabled: false
-      envoy:
-        mountTmpVolume: true
-    # Reuse the existing control plane's cluster gateway controller
-    gatewayController:
-      enabled: false
-    # External Secrets Operator configuration
-    external-secrets:
-      enabled: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: openchoreo-data-plane-values
+      valuesKey: values.yaml
