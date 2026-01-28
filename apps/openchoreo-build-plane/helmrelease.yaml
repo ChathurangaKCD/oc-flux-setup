@@ -5,7 +5,7 @@ metadata:
   name: openchoreo-build-plane
   namespace: openchoreo-build-plane
 spec:
-  interval: 30m
+  interval: 5m
   dependsOn:
     - name: openchoreo-control-plane
       namespace: openchoreo-control-plane
