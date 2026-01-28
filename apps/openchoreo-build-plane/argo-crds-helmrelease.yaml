@@ -1,9 +1,10 @@
 ---
 # Pre-install Argo Workflows CRDs before the build-plane chart
 # This is needed because:
-# 1. The build-plane chart has post-install hooks that use ClusterWorkflowTemplate CRD
-# 2. Helm validates ALL hooks before applying any templates
-# 3. So it fails trying to validate the hook before CRDs exist
+# 1. The build-plane chart has post-install hooks using ClusterWorkflowTemplate CRD
+# 2. Helm's KubeClient.Build() needs CRDs registered to parse hook manifests
+# 3. CRDs installed by the chart aren't registered fast enough before hook processing
+# See: https://github.com/helm/helm/blob/main/pkg/action/hooks.go
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
