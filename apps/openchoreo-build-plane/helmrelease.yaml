@@ -11,8 +11,6 @@ spec:
       namespace: openchoreo-control-plane
     - name: registry
       namespace: openchoreo-build-plane
-    - name: argo-workflows-crds
-      namespace: openchoreo-build-plane
   chart:
     spec:
       chart: openchoreo-build-plane
@@ -23,11 +21,14 @@ spec:
         namespace: flux-system
       interval: 12h
   install:
-    # Retry on CRD timing issues (Argo CRDs installed by chart dependencies)
+    # Skip OpenAPI validation to avoid CRD chicken-and-egg issue
+    # (chart has post-install hooks that use CRDs installed by the chart itself)
+    disableOpenAPIValidation: true
     remediation:
       retries: 3
       remediateLastFailure: true
   upgrade:
+    disableOpenAPIValidation: true
     remediation:
       retries: 3
   valuesFrom:
