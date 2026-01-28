@@ -11,7 +11,10 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  # Wait for control-plane Kustomization (which waits for control-plane HelmRelease)
-  # This ensures OpenChoreo CRDs are installed before applying plane CRs
+  # Wait for all plane Kustomizations to be ready
+  # Plane CRs reference secrets (cluster-agent-tls) created by each plane's HelmRelease
   dependsOn:
     - name: openchoreo-control-plane
+    - name: openchoreo-data-plane
+    - name: openchoreo-build-plane
+    - name: openchoreo-observability-plane

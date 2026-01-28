@@ -131,7 +131,7 @@ kubectl get dataplane,buildplane,observabilityplane -A
 
 - Console: http://openchoreo.localhost:8080
 - API: http://api.openchoreo.localhost:8080
-- Deployed apps: http://<env>.openchoreoapis.localhost:19080/<component>/...
+- Deployed apps: http://<env>.openchoreoapis.localhost:9080/<component>/...
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
 
