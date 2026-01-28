@@ -1,88 +1,127 @@
-# OpenChoreo 0.11 Flux GitOps Setup
+# OpenChoreo 0.12.0 Flux GitOps Setup
 
-This repository contains Flux GitOps manifests for deploying OpenChoreo 0.11 on a k3d cluster.
+This repository contains Flux GitOps manifests for deploying OpenChoreo 0.12.0 on a k3d cluster.
 
 ## Repository Structure
 
 ```
 oc-flux-setup/
-├── clusters/
-│   └── openchoreo-dev/
-│       └── kustomization.yaml       # Entry point - references infrastructure + apps
+├── clusters/openchoreo-dev/
+│   ├── flux-system/                              # Flux components (managed by bootstrap)
+│   ├── kustomization.yaml                        # Entry point
+│   ├── infrastructure-kustomization.yaml         # cert-manager + helm repos
+│   ├── openchoreo-control-plane-kustomization.yaml
+│   ├── openchoreo-data-plane-kustomization.yaml
+│   ├── openchoreo-build-plane-kustomization.yaml
+│   ├── openchoreo-observability-plane-kustomization.yaml
+│   └── plane-crs-kustomization.yaml
 ├── infrastructure/
-│   ├── sources/
-│   │   └── helm-repositories.yaml   # Helm repos (jetstack + openchoreo OCI)
-│   ├── cert-manager/
-│   │   ├── namespace.yaml
-│   │   └── helmrelease.yaml
-│   └── kustomization.yaml
-└── apps/
-    └── openchoreo/
-        ├── namespaces.yaml          # All OpenChoreo namespaces
-        ├── control-plane.yaml       # HelmRelease + TLS Certificate
-        ├── data-plane.yaml          # HelmRelease + Certificate + DataPlane CR
-        ├── build-plane.yaml         # HelmRelease + BuildPlane CR
-        ├── observability-plane.yaml # HelmRelease + ObservabilityPlane CR
-        └── kustomization.yaml
+│   ├── sources/helm-repositories.yaml            # Helm repos (jetstack, openchoreo, argo, eso, twuni)
+│   └── cert-manager/
+├── apps/
+│   ├── openchoreo-control-plane/
+│   │   ├── helmrelease.yaml
+│   │   └── values.yaml
+│   ├── openchoreo-data-plane/
+│   │   ├── helmrelease.yaml
+│   │   ├── eso-crds-helmrelease.yaml             # Pre-install External Secrets CRDs
+│   │   └── values.yaml
+│   ├── openchoreo-build-plane/
+│   │   ├── helmrelease.yaml
+│   │   ├── argo-crds-helmrelease.yaml            # Pre-install Argo Workflows CRDs
+│   │   ├── registry-helmrelease.yaml             # Docker registry for builds
+│   │   └── values.yaml
+│   ├── openchoreo-observability-plane/
+│   │   ├── helmrelease.yaml
+│   │   └── values.yaml
+│   └── openchoreo-plane-crs/                     # DataPlane, BuildPlane, ObservabilityPlane CRs
+└── k3d-config.yaml
 ```
 
 ## Dependency Chain
 
 ```
-cert-manager
-    └── control-plane
-            ├── data-plane
-            ├── build-plane
-            └── observability-plane
+flux-system
+    └── infrastructure (cert-manager + helm repos)
+            └── openchoreo-control-plane
+                    ├── openchoreo-data-plane
+                    │       └── external-secrets-crds (pre-req)
+                    ├── openchoreo-build-plane
+                    │       ├── argo-workflows-crds (pre-req)
+                    │       └── registry (pre-req)
+                    ├── openchoreo-observability-plane
+                    └── openchoreo-plane-crs
 ```
+
+## CRD Pre-Installation (Important)
+
+The build-plane and data-plane charts have **post-install hooks** that reference CRDs installed by the chart itself (ClusterWorkflowTemplate, ClusterSecretStore). Helm fails because:
+
+1. Helm installs chart templates (including CRDs as sub-chart templates)
+2. Helm immediately tries to process post-install hooks
+3. Hook processing requires `KubeClient.Build()` to parse manifests
+4. CRDs aren't registered with the API server yet (takes a few seconds)
+5. Error: "no matches for kind ClusterWorkflowTemplate"
+
+**Solution:** Pre-install CRDs using separate HelmReleases that the main releases depend on:
+- `argo-workflows-crds` - Installs only Argo CRDs (controller/server disabled)
+- `external-secrets-crds` - Installs only ESO CRDs (operator disabled)
+
+See: https://github.com/helm/helm/blob/main/pkg/action/hooks.go
 
 ## Prerequisites
 
-- k3d cluster running (see below)
-- Flux CLI installed
-- GitHub repository created
+- k3d v5.8+
+- kubectl v1.32+
+- Flux CLI v2.0+
+- GitHub personal access token
 
 ### Create k3d Cluster
 
 ```bash
-curl -s https://raw.githubusercontent.com/openchoreo/openchoreo/release-v0.11/install/k3d/single-cluster/config.yaml | k3d cluster create --config=-
+# Use the included config
+k3d cluster create --config=k3d-config.yaml
+
+# Or download from OpenChoreo
+curl -s https://raw.githubusercontent.com/openchoreo/openchoreo/release-v0.12/install/k3d/single-cluster/config.yaml | k3d cluster create --config=-
 ```
 
 ## Installation
 
-### Option 1: Bootstrap with Flux (Recommended)
+### Bootstrap with Flux
 
 ```bash
-# Bootstrap Flux and connect to this repository
+export GITHUB_TOKEN=<your-pat>
+
 flux bootstrap github \
   --owner=<your-github-user> \
   --repository=oc-flux-setup \
   --path=clusters/openchoreo-dev \
-  --personal
-```
-
-### Option 2: Manual Apply (Testing)
-
-```bash
-# Install Flux components first
-flux install
-
-# Apply the manifests
-kubectl apply -k clusters/openchoreo-dev/
+  --personal \
+  --token-auth
 ```
 
 ## Verification
 
 ```bash
-# Check Flux HelmReleases
+# Check Flux HelmReleases (all should be Ready: True)
 flux get helmreleases -A
 
+# Expected output:
+# cert-manager                    ✓
+# argo-workflows-crds             ✓
+# external-secrets-crds           ✓
+# registry                        ✓
+# openchoreo-control-plane        ✓
+# openchoreo-data-plane           ✓
+# openchoreo-build-plane          ✓
+# openchoreo-observability-plane  ✓
+
+# Check Kustomizations
+flux get kustomizations -A
+
 # Check pods
-kubectl get pods -n cert-manager
-kubectl get pods -n openchoreo-control-plane
-kubectl get pods -n openchoreo-data-plane
-kubectl get pods -n openchoreo-build-plane
-kubectl get pods -n openchoreo-observability-plane
+kubectl get pods -A | grep -E "openchoreo|cert-manager"
 
 # Check plane CRs
 kubectl get dataplane,buildplane,observabilityplane -A
@@ -98,35 +137,50 @@ kubectl get dataplane,buildplane,observabilityplane -A
 
 ## Configuration
 
-### Control Plane
-- Base domain: `openchoreo.localhost`
-- Port: `:8080`
-- Gateway ports: 80/443
+Configuration values are stored in separate `values.yaml` files for each plane, loaded via ConfigMaps:
 
-### Data Plane
-- Gateway ports: 19080/19443
-- External secrets: enabled
-- Gateway controller: disabled
-
-### Build Plane
-- Registry: `host.k3d.internal:10082`
-- Argo workflows: enabled
-
-### Observability Plane
-- OpenSearch: enabled (standalone mode)
+| Plane | Values File | Key Settings |
+|-------|-------------|--------------|
+| Control | `apps/openchoreo-control-plane/values.yaml` | baseDomain, gateway ports |
+| Data | `apps/openchoreo-data-plane/values.yaml` | external-secrets, gateway |
+| Build | `apps/openchoreo-build-plane/values.yaml` | registry host, argo workflows |
+| Observability | `apps/openchoreo-observability-plane/values.yaml` | OpenSearch, Prometheus |
 
 ## Updating Versions
 
-To update OpenChoreo version, modify the `chart.spec.version` in each HelmRelease file:
+1. Update `chart.spec.version` in each HelmRelease
+2. Commit and push
+3. Flux automatically reconciles
 
-```yaml
-spec:
-  chart:
-    spec:
-      version: "0.12.0"  # Update version here
+```bash
+# Force immediate reconciliation
+flux reconcile source git flux-system
+flux reconcile kustomization flux-system --with-source
 ```
 
-Flux will automatically reconcile the changes.
+## Troubleshooting
+
+### HelmRelease stuck or failed
+
+```bash
+# Check HelmRelease status
+flux get helmrelease <name> -n <namespace>
+
+# View detailed events
+kubectl describe helmrelease <name> -n <namespace>
+
+# Check Helm controller logs
+kubectl logs -n flux-system deploy/helm-controller
+
+# Force reinstall
+flux reconcile helmrelease <name> -n <namespace> --force
+```
+
+### CRD-related errors
+
+If you see "no matches for kind ClusterWorkflowTemplate" or similar:
+- Ensure `argo-workflows-crds` or `external-secrets-crds` HelmReleases are Ready
+- Check that main releases have proper `dependsOn` referencing the CRD releases
 
 ## Cleanup
 
