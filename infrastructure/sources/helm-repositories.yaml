@@ -26,3 +26,21 @@ metadata:
 spec:
   interval: 1h
   url: https://twuni.github.io/docker-registry.helm
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: argo
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://argoproj.github.io/argo-helm
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: external-secrets
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.external-secrets.io

@@ -1,0 +1,43 @@
+---
+# Pre-install Argo Workflows CRDs before the build-plane chart
+# This is needed because:
+# 1. The build-plane chart has post-install hooks that use ClusterWorkflowTemplate CRD
+# 2. Helm validates ALL hooks before applying any templates
+# 3. So it fails trying to validate the hook before CRDs exist
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: argo-workflows-crds
+  namespace: openchoreo-build-plane
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: argo-workflows
+      version: "0.45.2"
+      sourceRef:
+        kind: HelmRepository
+        name: argo
+        namespace: flux-system
+      interval: 12h
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # Only install CRDs, disable all other components
+    crds:
+      install: true
+      keep: true
+    controller:
+      enabled: false
+    server:
+      enabled: false
+    workflow:
+      serviceAccount:
+        create: false
+    createAggregateRoles: false

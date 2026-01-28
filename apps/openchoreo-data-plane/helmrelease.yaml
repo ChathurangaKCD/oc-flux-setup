@@ -9,6 +9,8 @@ spec:
   dependsOn:
     - name: openchoreo-control-plane
       namespace: openchoreo-control-plane
+    - name: external-secrets-crds
+      namespace: openchoreo-data-plane
   chart:
     spec:
       chart: openchoreo-data-plane

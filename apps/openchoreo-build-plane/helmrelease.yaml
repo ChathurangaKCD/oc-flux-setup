@@ -11,6 +11,8 @@ spec:
       namespace: openchoreo-control-plane
     - name: registry
       namespace: openchoreo-build-plane
+    - name: argo-workflows-crds
+      namespace: openchoreo-build-plane
   chart:
     spec:
       chart: openchoreo-build-plane
