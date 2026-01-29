@@ -79,12 +79,24 @@ See: https://github.com/helm/helm/blob/main/pkg/action/hooks.go
 ### Create k3d Cluster
 
 ```bash
-# Use the included config
-k3d cluster create --config=k3d-config.yaml
-
-# Or download from OpenChoreo
-curl -s https://raw.githubusercontent.com/openchoreo/openchoreo/release-v0.12/install/k3d/single-cluster/config.yaml | k3d cluster create --config=-
+# Use the included config (uses internal ports 18080/19080 for nginx proxy setup)
+sudo k3d cluster create --config=k3d-config.yaml
 ```
+
+### Start nginx Proxy (Required for HTTP Access)
+
+The nginx proxy strips HSTS and CSP headers that would otherwise force HTTPS and break browser access.
+
+```bash
+# One-liner: pull config from GitHub and start/restart nginx proxy
+curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/nginx-proxy.conf -o /tmp/nginx-proxy.conf && \
+  sudo docker rm -f nginx-proxy 2>/dev/null; \
+  sudo docker run -d --name nginx-proxy --network host -v /tmp/nginx-proxy.conf:/etc/nginx/nginx.conf:ro nginx:alpine
+```
+
+This proxies:
+- `8080 → 18080` (control plane)
+- `9080 → 19080` (data plane)
 
 ## Installation
 
