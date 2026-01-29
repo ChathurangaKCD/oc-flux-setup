@@ -143,7 +143,7 @@ kubectl get dataplane,buildplane,observabilityplane -A
 
 - Console: http://openchoreovm.test:8080
 - API: http://api.openchoreovm.test:8080
-- Deployed apps: http://<env>.openchoreovm-apis.test:9080/<component>/...
+- Deployed apps: http://<env>.dp.openchoreovm.test:9080/<component>/...
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
 

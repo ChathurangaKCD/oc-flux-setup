@@ -148,7 +148,7 @@ After adding hosts entries pointing to the VM IP:
 | http://openchoreovm.test:8080 | Backstage UI (Console) |
 | http://api.openchoreovm.test:8080 | OpenChoreo API |
 | http://thunder.openchoreovm.test:8080 | Thunder Service |
-| http://*.openchoreovm-apis.test:9080 | Deployed Workloads |
+| http://*.dp.openchoreovm.test:9080 | Deployed Workloads |
 
 ### Local /etc/hosts Entry
 
