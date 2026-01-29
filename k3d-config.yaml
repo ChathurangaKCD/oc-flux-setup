@@ -8,21 +8,20 @@ agents: 0
 kubeAPI:
   hostPort: "6550"
 # VM note: Only ports 8080 and 9080 are exposed externally on the VM
-# Other ports are accessible only from within the VM
+# nginx proxy runs on 8080/9080, k3d uses internal ports 18080/19080
 ports:
-  # Control Plane uses port range 8xxx
+  # Control Plane - nginx proxies 8080→18080
   # HTTP traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 80)
-  - port: 8080:80
+  - port: 18080:80
     nodeFilters:
       - loadbalancer
   # HTTPS traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 443)
   - port: 8443:443
     nodeFilters:
       - loadbalancer
-  # Data Plane uses port range 19xxx (matches kind and other cluster setups)
+  # Data Plane - nginx proxies 9080→19080
   # HTTP traffic to workloads via Gateway
-  # VM change: 9080 instead of 19080 (VM external port constraint)
-  - port: 9080:19080
+  - port: 19080:19080
     nodeFilters:
       - loadbalancer
   # HTTPS traffic to workloads via Gateway
