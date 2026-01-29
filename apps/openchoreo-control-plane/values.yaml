@@ -1,7 +1,7 @@
 # Helm values for OpenChoreo Control Plane
 
 global:
-  baseDomain: openchoreovm.localhost
+  baseDomain: openchoreovm.test
   # Port suffix for URLs (k3d maps host:8080 -> container:80)
   port: ":8080"
 
@@ -18,9 +18,9 @@ controllerManager:
 thunder:
   configuration:
     server:
-      publicUrl: "http://thunder.openchoreovm.localhost:8080"
+      publicUrl: "http://thunder.openchoreovm.test:8080"
     gateClient:
-      hostname: "thunder.openchoreovm.localhost"
+      hostname: "thunder.openchoreovm.test"
       port: 8080
       scheme: "http"
 

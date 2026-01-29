@@ -19,7 +19,7 @@ spec:
     name: openchoreo-selfsigned-issuer
     kind: ClusterIssuer
   dnsNames:
-    - "*.openchoreovm.localhost"
-    - "openchoreovm.localhost"
-    - "api.openchoreovm.localhost"
-    - "thunder.openchoreovm.localhost"
+    - "*.openchoreovm.test"
+    - "openchoreovm.test"
+    - "api.openchoreovm.test"
+    - "thunder.openchoreovm.test"
