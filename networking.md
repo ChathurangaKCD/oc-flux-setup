@@ -15,12 +15,14 @@ OpenChoreo runs on k3d (k3s in Docker). Traffic flows through multiple layers:
 
 ## Port Mappings
 
-This VM only exposes ports 8080 and 9080 externally.
+This VM only exposes ports 8080 and 9080 externally. An nginx proxy strips HSTS/CSP headers that break HTTP-only access.
 
-| Host Port | Cluster Port | Purpose |
-|-----------|--------------|---------|
-| 8080 | 80 | Control Plane HTTP (UI, API) |
-| 9080 | 19080 | Data Plane HTTP (deployed workloads) |
+| External Port | nginx | k3d | Cluster Port | Purpose |
+|---------------|-------|-----|--------------|---------|
+| 8080 | ✓ | 18080 | 80 | Control Plane HTTP (UI, API) |
+| 9080 | ✓ | 19080 | 19080 | Data Plane HTTP (deployed workloads) |
+
+**Traffic flow:** External → nginx (strips headers) → k3d → Cluster
 
 See `k3d-config.yaml` for the full cluster configuration.
 
@@ -30,20 +32,30 @@ Request: `http://api.openchoreovm.test:8080`
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Browser: http://api.openchoreovm.test:8080                              │
+│  Browser: http://api.openchoreovm.test:8080                                 │
 │  (DNS resolves to VM IP via /etc/hosts)                                     │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  1. VM Host (e.g., 172.22.1.162:8080)                                       │
-│     Port 8080 is bound by k3d-serverlb container                            │
+│     Port 8080 is bound by nginx-proxy container                             │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  2. k3d Load Balancer Container                                             │
-│     Maps host port 8080 → cluster port 80                                   │
+│  2. nginx-proxy Container (host networking)                                 │
+│     - Proxies 8080 → 18080 (control plane)                                  │
+│     - Proxies 9080 → 19080 (data plane)                                     │
+│     - Strips Strict-Transport-Security header                               │
+│     - Strips Content-Security-Policy header (upgrade-insecure-requests)     │
+│     - Sets Host header to openchoreovm.test                                 │
+└─────────────────────────────────────┬───────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  3. k3d Load Balancer Container                                             │
+│     Maps host port 18080 → cluster port 80                                  │
 │     Forwards to k3d-openchoreo-server-0 node                                │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
@@ -146,11 +158,60 @@ After adding hosts entries pointing to the VM IP:
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
 
+## nginx Proxy Setup
+
+The nginx proxy is required to strip HSTS and CSP headers that break HTTP-only browser access.
+
+```bash
+# Create nginx config
+cat > /tmp/nginx.conf << 'EOF'
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Control Plane proxy: 8080 -> 18080
+    server {
+        listen 8080;
+        location / {
+            proxy_pass http://127.0.0.1:18080;
+            proxy_http_version 1.1;
+            proxy_set_header Host openchoreovm.test;
+            proxy_set_header Connection "";
+            proxy_hide_header Strict-Transport-Security;
+            proxy_hide_header Content-Security-Policy;
+        }
+    }
+
+    # Data Plane proxy: 9080 -> 19080
+    server {
+        listen 9080;
+        location / {
+            proxy_pass http://127.0.0.1:19080;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header Connection "";
+            proxy_hide_header Strict-Transport-Security;
+            proxy_hide_header Content-Security-Policy;
+        }
+    }
+}
+EOF
+
+# Start nginx proxy
+sudo docker run -d --name nginx-proxy --network host \
+  -v /tmp/nginx.conf:/etc/nginx/nginx.conf:ro nginx:alpine
+
+# Check nginx status
+sudo docker ps | grep nginx-proxy
+sudo docker logs nginx-proxy
+```
+
 ## Debugging Commands
 
 ```bash
 # Check what's listening on host ports
-ss -tlnp | grep -E "8080|9080"
+ss -tlnp | grep -E "8080|9080|18080|19080"
 
 # Check gateway service
 kubectl get svc gateway-default -n openchoreo-control-plane
