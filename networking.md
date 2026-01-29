@@ -176,8 +176,9 @@ http {
         location / {
             proxy_pass http://127.0.0.1:18080;
             proxy_http_version 1.1;
-            proxy_set_header Host openchoreovm.test;
+            proxy_set_header Host $http_host;
             proxy_set_header Connection "";
+            proxy_set_header X-Real-IP $remote_addr;
             proxy_hide_header Strict-Transport-Security;
             proxy_hide_header Content-Security-Policy;
         }
@@ -189,8 +190,9 @@ http {
         location / {
             proxy_pass http://127.0.0.1:19080;
             proxy_http_version 1.1;
-            proxy_set_header Host $host;
+            proxy_set_header Host $http_host;
             proxy_set_header Connection "";
+            proxy_set_header X-Real-IP $remote_addr;
             proxy_hide_header Strict-Transport-Security;
             proxy_hide_header Content-Security-Policy;
         }
