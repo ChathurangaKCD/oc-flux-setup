@@ -22,6 +22,11 @@ spec:
   gateway:
     organizationVirtualHost: openchoreoapis.internal
     publicVirtualHost: dp.openchoreovm.test
+    # Ports must match the gateway service ports (set in data-plane values.yaml)
+    publicHTTPPort: 9080
+    publicHTTPSPort: 9443
+    organizationHTTPPort: 9081
+    organizationHTTPSPort: 9444
   observabilityPlaneRef: default
 ---
 # BuildPlane CR - registers build plane with control plane
