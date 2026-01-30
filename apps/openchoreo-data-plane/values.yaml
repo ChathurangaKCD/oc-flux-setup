@@ -2,8 +2,8 @@
 
 # Gateway configuration for single-cluster setup
 gateway:
-  httpPort: 19080
-  httpsPort: 19443
+  httpPort: 9080
+  httpsPort: 9443
   # Use self-signed issuer in control plane for TLS certs
   selfSignedIssuer:
     enabled: false

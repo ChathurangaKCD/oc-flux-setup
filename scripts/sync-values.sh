@@ -16,6 +16,12 @@ LOCAL_DOMAIN="openchoreovm.test"
 UPSTREAM_DP_DOMAIN="openchoreoapis.localhost"
 LOCAL_DP_DOMAIN="dp.openchoreovm.test"
 
+# Port replacements (simplify external port to match internal)
+UPSTREAM_DP_HTTP_PORT="19080"
+LOCAL_DP_HTTP_PORT="9080"
+UPSTREAM_DP_HTTPS_PORT="19443"
+LOCAL_DP_HTTPS_PORT="9443"
+
 # Target directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -55,6 +61,10 @@ fetch_and_transform() {
     content=$(echo "$content" | sed "s/${UPSTREAM_DOMAIN}/${LOCAL_DOMAIN}/g")
     content=$(echo "$content" | sed "s/${UPSTREAM_DP_DOMAIN}/${LOCAL_DP_DOMAIN}/g")
 
+    # Apply port replacements (data plane ports)
+    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTP_PORT}/${LOCAL_DP_HTTP_PORT}/g")
+    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTPS_PORT}/${LOCAL_DP_HTTPS_PORT}/g")
+
     # Write to local file
     echo "$content" > "$local_file"
     echo -e "${GREEN}  Written to: ${local_file}${NC}"
@@ -74,9 +84,13 @@ echo ""
 echo "================================================"
 echo -e "${GREEN}Sync complete!${NC}"
 echo ""
-echo "Domain replacements applied:"
-echo "  ${UPSTREAM_DOMAIN} -> ${LOCAL_DOMAIN}"
-echo "  ${UPSTREAM_DP_DOMAIN} -> ${LOCAL_DP_DOMAIN}"
+echo "Replacements applied:"
+echo "  Domains:"
+echo "    ${UPSTREAM_DOMAIN} -> ${LOCAL_DOMAIN}"
+echo "    ${UPSTREAM_DP_DOMAIN} -> ${LOCAL_DP_DOMAIN}"
+echo "  Ports:"
+echo "    ${UPSTREAM_DP_HTTP_PORT} -> ${LOCAL_DP_HTTP_PORT}"
+echo "    ${UPSTREAM_DP_HTTPS_PORT} -> ${LOCAL_DP_HTTPS_PORT}"
 echo ""
 echo "Review changes with: git diff"
 echo "Commit with: git add -A && git commit -m 'Sync values from upstream ${REF}'"

@@ -20,7 +20,7 @@ This VM only exposes ports 8080 and 9080 externally.
 | External Port | nginx | k3d | Cluster Port | Purpose |
 |---------------|-------|-----|--------------|---------|
 | 8080 | ✓ | 18080 | 80 | Control Plane HTTP (UI, API) |
-| 9080 | - | 9080 | 19080 | Data Plane HTTP (deployed workloads) |
+| 9080 | - | 9080 | 9080 | Data Plane HTTP (deployed workloads) |
 
 **Traffic flow:**
 - Control Plane: External → nginx (strips HSTS/CSP) → k3d → Cluster

@@ -5,10 +5,11 @@ This guide explains how to access OpenChoreo running on a remote VM from your lo
 ## Architecture
 
 ```
-Local Browser → VM nginx (8080/9080) → k3d (18080/19080) → Kubernetes Cluster
+Control Plane: Local Browser → VM nginx (8080) → k3d (18080) → Cluster port 80
+Data Plane:    Local Browser → VM (9080) → k3d (9080) → Cluster port 9080
 ```
 
-The nginx proxy strips HSTS and CSP security headers that would otherwise force HTTPS and break HTTP-only browser access.
+The nginx proxy strips HSTS and CSP security headers from the control plane (Backstage UI). The data plane uses Envoy which doesn't have these headers, so it connects directly.
 
 ## Prerequisites
 
