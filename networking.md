@@ -15,14 +15,16 @@ OpenChoreo runs on k3d (k3s in Docker). Traffic flows through multiple layers:
 
 ## Port Mappings
 
-This VM only exposes ports 8080 and 9080 externally. An nginx proxy strips HSTS/CSP headers that break HTTP-only access.
+This VM only exposes ports 8080 and 9080 externally.
 
 | External Port | nginx | k3d | Cluster Port | Purpose |
 |---------------|-------|-----|--------------|---------|
 | 8080 | ✓ | 18080 | 80 | Control Plane HTTP (UI, API) |
-| 9080 | ✓ | 19080 | 19080 | Data Plane HTTP (deployed workloads) |
+| 9080 | - | 9080 | 19080 | Data Plane HTTP (deployed workloads) |
 
-**Traffic flow:** External → nginx (strips headers) → k3d → Cluster
+**Traffic flow:**
+- Control Plane: External → nginx (strips HSTS/CSP) → k3d → Cluster
+- Data Plane: External → k3d → Cluster (no nginx needed)
 
 See `k3d-config.yaml` for the full cluster configuration.
 
@@ -45,11 +47,10 @@ Request: `http://api.openchoreovm.test:8080`
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  2. nginx-proxy Container (host networking)                                 │
-│     - Proxies 8080 → 18080 (control plane)                                  │
-│     - Proxies 9080 → 19080 (data plane)                                     │
+│     - Proxies 8080 → 18080 (control plane only)                             │
 │     - Strips Strict-Transport-Security header                               │
 │     - Strips Content-Security-Policy header (upgrade-insecure-requests)     │
-│     - Sets Host header to openchoreovm.test                                 │
+│     - Data plane (9080) goes directly to k3d, no nginx needed               │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
                                       ▼
@@ -160,7 +161,7 @@ After adding hosts entries pointing to the VM IP:
 
 ## nginx Proxy Setup
 
-The nginx proxy is required to strip HSTS and CSP headers that break HTTP-only browser access.
+The nginx proxy is required for the **control plane only** to strip HSTS and CSP headers that break HTTP-only browser access. The data plane (Envoy) doesn't have these headers, so it connects directly to k3d.
 
 ```bash
 # Create nginx config
@@ -171,24 +172,12 @@ events {
 
 http {
     # Control Plane proxy: 8080 -> 18080
+    # Strips HSTS and CSP headers from Backstage UI
+    # Data plane (port 9080) doesn't need proxy - Envoy doesn't have these headers
     server {
         listen 8080;
         location / {
             proxy_pass http://127.0.0.1:18080;
-            proxy_http_version 1.1;
-            proxy_set_header Host $http_host;
-            proxy_set_header Connection "";
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_hide_header Strict-Transport-Security;
-            proxy_hide_header Content-Security-Policy;
-        }
-    }
-
-    # Data Plane proxy: 9080 -> 19080
-    server {
-        listen 9080;
-        location / {
-            proxy_pass http://127.0.0.1:19080;
             proxy_http_version 1.1;
             proxy_set_header Host $http_host;
             proxy_set_header Connection "";

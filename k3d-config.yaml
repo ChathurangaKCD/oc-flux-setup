@@ -19,9 +19,9 @@ ports:
   - port: 8443:443
     nodeFilters:
       - loadbalancer
-  # Data Plane - nginx proxies 9080→19080
+  # Data Plane - direct access (no nginx needed, Envoy doesn't have HSTS/CSP)
   # HTTP traffic to workloads via Gateway
-  - port: 19080:19080
+  - port: 9080:19080
     nodeFilters:
       - loadbalancer
   # HTTPS traffic to workloads via Gateway

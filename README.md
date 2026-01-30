@@ -98,9 +98,7 @@ curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/n
   sudo docker run -d --name nginx-proxy --network host -v /tmp/nginx-proxy.conf:/etc/nginx/nginx.conf:ro nginx:alpine
 ```
 
-This proxies:
-- `8080 → 18080` (control plane)
-- `9080 → 19080` (data plane)
+This proxies `8080 → 18080` (control plane only). Data plane (9080) connects directly to k3d.
 
 ## Installation
 
