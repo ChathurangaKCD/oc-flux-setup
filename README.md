@@ -37,7 +37,9 @@ oc-flux-setup/
 │   └── openchoreo-plane-crs/                     # DataPlane, BuildPlane, ObservabilityPlane CRs
 ├── k3d-config.yaml                                # k3d cluster configuration
 ├── nginx-proxy.conf                               # nginx config for stripping HSTS/CSP headers
-└── LOCAL_ACCESS.md                                # Guide for accessing from local machine
+├── LOCAL_ACCESS.md                                # Guide for accessing from local machine
+└── scripts/
+    └── sync-values.sh                             # Sync values from upstream OpenChoreo
 ```
 
 ## Dependency Chain
@@ -164,6 +166,30 @@ Configuration values are stored in separate `values.yaml` files for each plane, 
 | Observability | `apps/openchoreo-observability-plane/values.yaml` | OpenSearch, Prometheus |
 
 ## Updating Versions
+
+### Sync Values from Upstream
+
+Use the sync script to fetch latest values from upstream OpenChoreo:
+
+```bash
+# Sync from a specific tag
+./scripts/sync-values.sh v0.12.0
+
+# Sync from a commit
+./scripts/sync-values.sh abc1234
+
+# Review changes
+git diff
+
+# Commit
+git add -A && git commit -m "Sync values from upstream v0.12.0"
+```
+
+The script automatically replaces domains:
+- `openchoreo.localhost` → `openchoreovm.test`
+- `openchoreoapis.localhost` → `dp.openchoreovm.test`
+
+### Update Chart Versions
 
 1. Update `chart.spec.version` in each HelmRelease
 2. Commit and push
