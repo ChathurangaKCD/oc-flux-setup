@@ -35,7 +35,9 @@ oc-flux-setup/
 │   │   ├── helmrelease.yaml
 │   │   └── values.yaml
 │   └── openchoreo-plane-crs/                     # DataPlane, BuildPlane, ObservabilityPlane CRs
-└── k3d-config.yaml
+├── k3d-config.yaml                                # k3d cluster configuration
+├── nginx-proxy.conf                               # nginx config for stripping HSTS/CSP headers
+└── LOCAL_ACCESS.md                                # Guide for accessing from local machine
 ```
 
 ## Dependency Chain
@@ -139,26 +141,16 @@ kubectl get pods -A | grep -E "openchoreo|cert-manager"
 kubectl get dataplane,buildplane,observabilityplane -A
 ```
 
-## Access URLs
+## Access
 
-| URL | Purpose |
-|-----|---------|
-| http://openchoreovm.test:8080 | Console (UI) |
-| http://api.openchoreovm.test:8080 | Management API |
-| http://thunder.openchoreovm.test:8080 | Auth Service |
-| http://\<env\>.dp.openchoreovm.test:9080/\<component\>/... | Deployed Apps |
+See [LOCAL_ACCESS.md](LOCAL_ACCESS.md) for detailed instructions on accessing OpenChoreo from your local machine.
+
+**Quick reference:**
+- Console: http://openchoreovm.test:8080
+- API: http://api.openchoreovm.test:8080
+- Deployed apps: http://\<env\>.dp.openchoreovm.test:9080/...
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
-
-### Local /etc/hosts Setup
-
-Add to your local `/etc/hosts` (replace `<VM_IP>` with your VM's IP):
-
-```
-<VM_IP> openchoreovm.test api.openchoreovm.test thunder.openchoreovm.test development.dp.openchoreovm.test
-```
-
-For additional environments, add entries like `staging.dp.openchoreovm.test`, `production.dp.openchoreovm.test`.
 
 ## Configuration
 
