@@ -1,0 +1,217 @@
+# OpenChoreo Setup Guide
+
+Detailed instructions for setting up OpenChoreo on a k3d cluster using Flux GitOps.
+
+## Prerequisites
+
+- k3d v5.8+
+- kubectl v1.32+
+- Flux CLI v2.0+
+- Docker with host networking support
+- GitHub personal access token (for Flux bootstrap)
+
+## Architecture
+
+### Dependency Chain
+
+```
+flux-system
+    └── infrastructure (cert-manager + helm repos)
+            └── openchoreo-control-plane
+                    ├── openchoreo-data-plane
+                    │       └── external-secrets-crds (pre-req)
+                    ├── openchoreo-build-plane
+                    │       ├── argo-workflows-crds (pre-req)
+                    │       └── registry (pre-req)
+                    ├── openchoreo-observability-plane
+                    └── openchoreo-plane-crs
+```
+
+### CRD Pre-Installation
+
+The build-plane and data-plane charts have **post-install hooks** that reference CRDs installed by the chart itself. Helm fails because hooks are processed before CRDs are registered.
+
+**Solution:** Pre-install CRDs using separate HelmReleases:
+- `argo-workflows-crds` - Installs only Argo CRDs (controller/server disabled)
+- `external-secrets-crds` - Installs only ESO CRDs (operator disabled)
+
+## Installation
+
+### 1. Create k3d Cluster
+
+```bash
+# Download and create cluster with the included config
+curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/k3d-config.yaml -o /tmp/k3d-config.yaml
+sudo k3d cluster create --config=/tmp/k3d-config.yaml
+
+# Set up kubeconfig
+mkdir -p ~/.kube && sudo k3d kubeconfig get openchoreo > ~/.kube/config && chmod 600 ~/.kube/config
+```
+
+### 2. Start nginx Proxy
+
+The nginx proxy strips HSTS and CSP headers from the control plane (Backstage UI) that would otherwise force HTTPS.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/nginx-proxy.conf -o /tmp/nginx-proxy.conf && \
+  sudo docker rm -f nginx-proxy 2>/dev/null; \
+  sudo docker run -d --name nginx-proxy --network host -v /tmp/nginx-proxy.conf:/etc/nginx/nginx.conf:ro nginx:alpine
+```
+
+**Port mapping:**
+- Control plane: `8080 → nginx → 18080 → k3d → 80`
+- Data plane: `9080 → k3d → 9080` (direct, no nginx needed)
+
+### 3. Bootstrap Flux
+
+```bash
+export GITHUB_TOKEN=<your-pat>
+
+flux bootstrap github \
+  --owner=<your-github-user> \
+  --repository=oc-flux-setup \
+  --path=clusters/openchoreo-dev \
+  --personal \
+  --token-auth
+```
+
+## Verification
+
+```bash
+# Check Flux HelmReleases (all should be Ready: True)
+flux get helmreleases -A
+
+# Expected: 8 releases all Ready
+# - cert-manager
+# - argo-workflows-crds
+# - external-secrets-crds
+# - registry
+# - openchoreo-control-plane
+# - openchoreo-data-plane
+# - openchoreo-build-plane
+# - openchoreo-observability-plane
+
+# Check Kustomizations
+flux get kustomizations -A
+
+# Check pods
+kubectl get pods -A | grep -E "openchoreo|cert-manager"
+
+# Check plane CRs
+kubectl get dataplane,buildplane,observabilityplane -A
+```
+
+## Configuration
+
+### Values Files
+
+Configuration is stored in `values.yaml` files, loaded via ConfigMaps:
+
+| Plane | Values File | Key Settings |
+|-------|-------------|--------------|
+| Control | `apps/openchoreo-control-plane/values.yaml` | baseDomain, gateway ports |
+| Data | `apps/openchoreo-data-plane/values.yaml` | external-secrets, gateway ports |
+| Build | `apps/openchoreo-build-plane/values.yaml` | registry host, argo workflows |
+| Observability | `apps/openchoreo-observability-plane/values.yaml` | OpenSearch, Prometheus |
+
+### Plane CRs
+
+The `apps/openchoreo-plane-crs/plane-registrations.yaml` defines:
+- **DataPlane** - Gateway ports and virtual hosts
+- **BuildPlane** - Cluster agent configuration
+- **ObservabilityPlane** - Observer URL
+
+## Updating Versions
+
+### Automatic (GitHub Action)
+
+The repo includes a GitHub Action that checks for new upstream releases and syncs automatically. See the workflow at `.github/workflows/sync-upstream.yaml`.
+
+### Manual Sync
+
+```bash
+# Sync from a specific tag
+./scripts/sync-values.sh v0.12.0
+
+# Review changes
+git diff
+
+# Commit
+git add -A && git commit -m "Sync values from upstream v0.12.0"
+git push
+```
+
+### Update Chart Versions
+
+1. Update `chart.spec.version` in each HelmRelease under `apps/*/helmrelease.yaml`
+2. Commit and push
+3. Flux automatically reconciles
+
+```bash
+# Force immediate reconciliation
+flux reconcile source git flux-system
+flux reconcile kustomization flux-system --with-source
+```
+
+## Troubleshooting
+
+### HelmRelease stuck or failed
+
+```bash
+# Check HelmRelease status
+flux get helmrelease <name> -n <namespace>
+
+# View detailed events
+kubectl describe helmrelease <name> -n <namespace>
+
+# Check Helm controller logs
+kubectl logs -n flux-system deploy/helm-controller
+
+# Force reinstall
+flux reconcile helmrelease <name> -n <namespace> --force
+```
+
+### CRD-related errors
+
+If you see "no matches for kind ClusterWorkflowTemplate" or similar:
+- Ensure `argo-workflows-crds` or `external-secrets-crds` HelmReleases are Ready
+- Check that main releases have proper `dependsOn` referencing the CRD releases
+
+### nginx proxy issues
+
+```bash
+# Check nginx status
+sudo docker ps | grep nginx-proxy
+
+# View nginx logs
+sudo docker logs nginx-proxy
+
+# Restart nginx
+sudo docker restart nginx-proxy
+```
+
+### Browser HSTS cache
+
+If the browser still redirects to HTTPS after setting up nginx:
+1. Go to `chrome://net-internals/#hsts`
+2. Enter `openchoreovm.test` in "Delete domain security policies"
+3. Click "Delete"
+
+## Cleanup
+
+```bash
+# Remove Flux and all managed resources
+flux uninstall
+
+# Stop nginx proxy
+sudo docker rm -f nginx-proxy
+
+# Delete the k3d cluster
+sudo k3d cluster delete openchoreo
+```
+
+## Related Documentation
+
+- [README.md](README.md) - Overview and quick start
+- [LOCAL_ACCESS.md](LOCAL_ACCESS.md) - Accessing from local machine
+- [networking.md](networking.md) - Network architecture details
