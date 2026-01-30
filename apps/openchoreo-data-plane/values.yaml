@@ -1,4 +1,4 @@
-# Helm values for OpenChoreo Data Plane
+# Helm values for OpenChoreo Data Plane in k3d single-cluster setup
 
 # Gateway configuration for single-cluster setup
 gateway:
@@ -9,6 +9,7 @@ gateway:
     enabled: false
   envoy:
     # Mount /tmp as emptyDir to fix Envoy temp file issues on macOS Docker/Colima
+    # Ref: https://github.com/kgateway-dev/kgateway/issues/9800
     mountTmpVolume: true
 
 # Reuse the existing control plane's cluster gateway controller
