@@ -1,0 +1,123 @@
+name: Sync Upstream OpenChoreo
+
+on:
+  schedule:
+    # Run every hour on Friday and Saturday (UTC)
+    # Friday = 5, Saturday = 6
+    - cron: '0 * * * 5'
+    - cron: '0 * * * 6'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force sync even if already on latest version'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest OpenChoreo release
+        id: latest
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/openchoreo/openchoreo/releases/latest | jq -r '.tag_name')
+          echo "Latest release: $LATEST"
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          # Strip 'v' prefix if present for version comparison
+          echo "version_number=${LATEST#v}" >> $GITHUB_OUTPUT
+
+      - name: Get current version from HelmRelease
+        id: current
+        run: |
+          CURRENT=$(grep -E '^\s+version:' apps/openchoreo-control-plane/helmrelease.yaml | head -1 | sed 's/.*version:\s*"\?\([^"]*\)"\?/\1/')
+          echo "Current version: $CURRENT"
+          echo "version=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Check if update needed
+        id: check
+        run: |
+          if [ "${{ steps.latest.outputs.version_number }}" = "${{ steps.current.outputs.version }}" ]; then
+            echo "Already on latest version (${{ steps.current.outputs.version }})"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "Update available: ${{ steps.current.outputs.version }} -> ${{ steps.latest.outputs.version_number }}"
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run sync-values.sh
+        if: steps.check.outputs.needs_update == 'true' || github.event.inputs.force == 'true'
+        run: |
+          chmod +x scripts/sync-values.sh
+          ./scripts/sync-values.sh ${{ steps.latest.outputs.version }}
+
+      - name: Update HelmRelease versions
+        if: steps.check.outputs.needs_update == 'true' || github.event.inputs.force == 'true'
+        run: |
+          NEW_VERSION="${{ steps.latest.outputs.version_number }}"
+
+          # Update all HelmRelease files
+          for file in apps/*/helmrelease.yaml; do
+            if [ -f "$file" ]; then
+              # Update version in chart spec (handles both quoted and unquoted)
+              sed -i "s/version: \"[0-9.]*\"/version: \"$NEW_VERSION\"/" "$file"
+              sed -i "s/version: [0-9.]*$/version: \"$NEW_VERSION\"/" "$file"
+              echo "Updated $file to version $NEW_VERSION"
+            fi
+          done
+
+      - name: Update sync script default version
+        if: steps.check.outputs.needs_update == 'true' || github.event.inputs.force == 'true'
+        run: |
+          NEW_VERSION="${{ steps.latest.outputs.version }}"
+          sed -i "s/DEFAULT_REF=\"v[0-9.]*\"/DEFAULT_REF=\"$NEW_VERSION\"/" scripts/sync-values.sh
+          echo "Updated sync-values.sh default ref to $NEW_VERSION"
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes detected"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected:"
+            git diff --stat
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "chore: sync with upstream OpenChoreo ${{ steps.latest.outputs.version }}
+
+          - Updated values.yaml files from upstream
+          - Updated HelmRelease versions to ${{ steps.latest.outputs.version_number }}
+          - Applied domain and port replacements
+
+          Upstream release: https://github.com/openchoreo/openchoreo/releases/tag/${{ steps.latest.outputs.version }}"
+
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Latest upstream version:** ${{ steps.latest.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current version:** ${{ steps.current.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changes.outputs.has_changes }}" = "true" ]; then
+            echo "- **Status:** ✅ Updated to ${{ steps.latest.outputs.version_number }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check.outputs.needs_update }}" = "false" ]; then
+            echo "- **Status:** ✅ Already on latest version" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** ℹ️ No changes needed" >> $GITHUB_STEP_SUMMARY
+          fi
