@@ -80,6 +80,10 @@ fetch_and_transform "values-bp.yaml" "$APPS_DIR/openchoreo-build-plane/values.ya
 echo ""
 fetch_and_transform "values-op.yaml" "$APPS_DIR/openchoreo-observability-plane/values.yaml" "Observability Plane"
 
+# Write version file
+echo "${REF#v}" > "$REPO_ROOT/VERSION"
+echo -e "${GREEN}Written version to: VERSION${NC}"
+
 echo ""
 echo "================================================"
 echo -e "${GREEN}Sync complete!${NC}"

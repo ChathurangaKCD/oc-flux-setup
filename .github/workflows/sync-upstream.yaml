@@ -30,10 +30,14 @@ jobs:
           # Strip 'v' prefix if present for version comparison
           echo "version_number=${LATEST#v}" >> $GITHUB_OUTPUT
 
-      - name: Get current version from HelmRelease
+      - name: Get current version from VERSION file
         id: current
         run: |
-          CURRENT=$(grep -E '^\s+version:' apps/openchoreo-control-plane/helmrelease.yaml | head -1 | sed 's/.*version:\s*"\?\([^"]*\)"\?/\1/')
+          if [ -f VERSION ]; then
+            CURRENT=$(cat VERSION)
+          else
+            CURRENT="0.0.0"
+          fi
           echo "Current version: $CURRENT"
           echo "version=$CURRENT" >> $GITHUB_OUTPUT
 
