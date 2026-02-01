@@ -19,3 +19,7 @@ gatewayController:
 # External Secrets Operator configuration
 external-secrets:
   enabled: true
+
+# Enable Fluent Bit for log collection (DaemonSet collects logs from all namespaces)
+fluent-bit:
+  enabled: true
