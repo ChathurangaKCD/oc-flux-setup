@@ -21,11 +21,7 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  values:
-    fullnameOverride: registry
-    persistence:
-      enabled: true
-      size: 10Gi
-    service:
-      type: LoadBalancer
-      port: 5000
+  valuesFrom:
+    - kind: ConfigMap
+      name: registry-values
+      valuesKey: values-registry.yaml

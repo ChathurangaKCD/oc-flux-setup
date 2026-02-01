@@ -11,5 +11,9 @@ configMapGenerator:
     namespace: openchoreo-build-plane
     files:
       - values.yaml
+  - name: registry-values
+    namespace: openchoreo-build-plane
+    files:
+      - values-registry.yaml
 generatorOptions:
   disableNameSuffixHash: true

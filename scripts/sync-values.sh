@@ -78,6 +78,8 @@ fetch_and_transform "values-dp.yaml" "$APPS_DIR/openchoreo-data-plane/values.yam
 echo ""
 fetch_and_transform "values-bp.yaml" "$APPS_DIR/openchoreo-build-plane/values.yaml" "Build Plane"
 echo ""
+fetch_and_transform "values-registry.yaml" "$APPS_DIR/openchoreo-build-plane/values-registry.yaml" "Registry"
+echo ""
 fetch_and_transform "values-op.yaml" "$APPS_DIR/openchoreo-observability-plane/values.yaml" "Observability Plane"
 
 # Write version file
