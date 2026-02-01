@@ -35,7 +35,3 @@ security:
   oidc:
     jwksUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/jwks"
     tokenUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/token"
-
-# Enable Fluent Bit for log collection (DaemonSet collects logs from all namespaces)
-fluent-bit:
-  enabled: true

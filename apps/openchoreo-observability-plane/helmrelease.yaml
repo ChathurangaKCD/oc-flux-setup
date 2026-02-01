@@ -28,3 +28,7 @@ spec:
     - kind: ConfigMap
       name: openchoreo-observability-plane-values
       valuesKey: values.yaml
+  # Local overrides (not synced from upstream)
+  values:
+    fluent-bit:
+      enabled: true
