@@ -23,3 +23,19 @@ external-secrets:
 # Enable Fluent Bit for log collection (DaemonSet collects logs from all namespaces)
 fluent-bit:
   enabled: true
+  config:
+    outputs: |
+      [OUTPUT]
+          Name opensearch
+          Host opensearch.openchoreo-observability-plane.svc.cluster.local
+          Generate_ID On
+          HTTP_Passwd ThisIsTheOpenSearchPassword1
+          HTTP_User admin
+          Logstash_Format On
+          Logstash_DateFormat %Y-%m-%d
+          Logstash_Prefix container-logs
+          Match kube.*
+          Port 9200
+          Suppress_Type_Name On
+          tls On
+          tls.verify Off
