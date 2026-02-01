@@ -46,6 +46,9 @@ sudo k3d cluster create --config=/tmp/k3d-config.yaml
 
 # Set up kubeconfig
 mkdir -p ~/.kube && sudo k3d kubeconfig get openchoreo > ~/.kube/config && chmod 600 ~/.kube/config
+
+# Generate machine-id (required for FluentBit log collection)
+sudo docker exec k3d-openchoreo-server-0 sh -c "cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id"
 ```
 
 ### 2. Start nginx Proxy
