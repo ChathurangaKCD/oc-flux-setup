@@ -56,14 +56,26 @@ sudo docker exec k3d-openchoreo-server-0 sh -c "cat /proc/sys/kernel/random/uuid
 The nginx proxy strips HSTS and CSP headers from the control plane (Backstage UI) that would otherwise force HTTPS.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/nginx-proxy.conf -o /tmp/nginx-proxy.conf && \
-  sudo docker rm -f nginx-proxy 2>/dev/null; \
-  sudo docker run -d --name nginx-proxy --network host -v /tmp/nginx-proxy.conf:/etc/nginx/nginx.conf:ro nginx:alpine
+# Create persistent config directory
+mkdir -p ~/nginx-config
+
+# Download config to persistent location (survives reboots)
+curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/nginx-proxy.conf -o ~/nginx-config/nginx-proxy.conf
+
+# Start nginx with auto-restart policy
+sudo docker rm -f nginx-proxy 2>/dev/null
+sudo docker run -d --name nginx-proxy \
+  --restart=always \
+  --network host \
+  -v ~/nginx-config/nginx-proxy.conf:/etc/nginx/nginx.conf:ro \
+  nginx:alpine
 ```
 
 **Port mapping:**
 - Control plane: `8080 → nginx → 18080 → k3d → 80`
 - Data plane: `9080 → k3d → 9080` (direct, no nginx needed)
+
+> **Note:** Using `--restart=always` ensures nginx automatically restarts after VM reboots. The config is stored in `~/nginx-config/` instead of `/tmp/` to persist across reboots.
 
 ### 3. Bootstrap Flux
 
@@ -156,6 +168,66 @@ flux reconcile source git flux-system
 flux reconcile kustomization flux-system --with-source
 ```
 
+## VM Restart Recovery
+
+After a VM restart, the k3d cluster containers restart automatically but may take time to become healthy. If kubectl stops responding:
+
+### Manual Recovery
+
+```bash
+# Check k3d container status
+docker ps -a --filter name=k3d
+
+# Restart the k3d cluster
+k3d cluster stop openchoreo && k3d cluster start openchoreo
+
+# Clean up any pods stuck in Unknown state
+kubectl delete pods -A --field-selector=status.phase=Unknown --force --grace-period=0
+```
+
+### Automatic Recovery (Optional)
+
+Install a systemd service that automatically recovers the cluster after VM restart:
+
+```bash
+# Download the recovery script
+sudo curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/scripts/k3d-recovery.sh -o /usr/local/bin/k3d-recovery.sh
+sudo chmod +x /usr/local/bin/k3d-recovery.sh
+
+# Create log file
+sudo touch /var/log/k3d-recovery.log
+sudo chown $USER:$USER /var/log/k3d-recovery.log
+
+# Install systemd service
+sudo tee /etc/systemd/system/k3d-recovery.service > /dev/null <<EOF
+[Unit]
+Description=k3d Cluster Auto-Recovery Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=$USER
+ExecStart=/usr/local/bin/k3d-recovery.sh
+StandardOutput=journal
+StandardError=journal
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable the service
+sudo systemctl daemon-reload
+sudo systemctl enable k3d-recovery.service
+```
+
+The recovery script:
+- Waits for Docker to be ready
+- Checks cluster health every 60 seconds (up to 5 attempts)
+- Automatically restarts k3d if cluster doesn't recover
+- Logs to `/var/log/k3d-recovery.log`
+
 ## Troubleshooting
 
 ### HelmRelease stuck or failed
@@ -184,13 +256,20 @@ If you see "no matches for kind ClusterWorkflowTemplate" or similar:
 
 ```bash
 # Check nginx status
-sudo docker ps | grep nginx-proxy
+docker ps | grep nginx-proxy
 
 # View nginx logs
-sudo docker logs nginx-proxy
+docker logs nginx-proxy
 
 # Restart nginx
-sudo docker restart nginx-proxy
+docker restart nginx-proxy
+
+# If nginx container is missing after reboot, recreate it:
+docker run -d --name nginx-proxy \
+  --restart=always \
+  --network host \
+  -v ~/nginx-config/nginx-proxy.conf:/etc/nginx/nginx.conf:ro \
+  nginx:alpine
 ```
 
 ### Browser HSTS cache
