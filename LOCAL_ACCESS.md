@@ -55,24 +55,11 @@ echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/test
 | URL | Purpose | Port |
 |-----|---------|------|
 | http://openchoreovm.test:8080 | Console (UI) | Control Plane |
-| http://api.openchoreovm.test:8080 | Management API | Control Plane |
-| http://thunder.openchoreovm.test:8080 | Auth Service | Control Plane |
+| http://api.openchoreovm.test:8080 |  | Control Plane |
+| http://thunder.openchoreovm.test:8080 | | Control Plane |
 | http://development.dp.openchoreovm.test:9080 | Deployed Apps | Data Plane |
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
-
-## 3. Test Connectivity
-
-```bash
-# Test control plane
-curl -s http://openchoreovm.test:8080 | head -5
-
-# Test API
-curl -s http://api.openchoreovm.test:8080/api/v1/health
-
-# Test deployed app (after deploying a component)
-curl -s http://development.dp.openchoreovm.test:9080/greeter-service/greeter/greet
-```
 
 ## Domain Structure
 
@@ -88,26 +75,3 @@ openchoreovm.test
     ├── staging.dp.openchoreovm.test
     └── production.dp.openchoreovm.test
 ```
-
-## Troubleshooting
-
-### DNS not resolving
-
-Verify `/etc/hosts` entry:
-
-```bash
-# Should return VM IP
-ping -c 1 openchoreovm.test
-```
-
-### Clear browser HSTS cache
-
-If the browser redirects to HTTPS despite the nginx proxy:
-
-1. Go to `chrome://net-internals/#hsts`
-2. Enter `openchoreovm.test` in "Delete domain security policies"
-3. Click "Delete"
-
-### VM-side issues
-
-For issues like blank pages, connection refused, or nginx proxy problems, see the [Troubleshooting section in SETUP.md](SETUP.md#troubleshooting).
