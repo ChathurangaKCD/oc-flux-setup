@@ -8,7 +8,7 @@ Bootstrap everything with a single command:
 
 ```bash
 export GITHUB_TOKEN=<your-github-pat>
-curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/scripts/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/scripts/bootstrap.sh | bash -s -- --force
 ```
 
 This will:

@@ -9,8 +9,20 @@
 # Usage:
 #   export GITHUB_TOKEN=<your-pat>
 #   ./bootstrap.sh
+#   ./bootstrap.sh --force  # Skip confirmation prompts
 
 set -euo pipefail
+
+# Parse arguments
+FORCE_MODE=false
+for arg in "$@"; do
+    case $arg in
+        -f|--force|-y|--yes)
+            FORCE_MODE=true
+            shift
+            ;;
+    esac
+done
 
 # Configuration
 GITHUB_OWNER="ChathurangaKCD"
@@ -93,14 +105,30 @@ check_prerequisites() {
 check_existing_cluster() {
     if k3d cluster list 2>/dev/null | grep -q "^${CLUSTER_NAME}\s"; then
         log_warn "Cluster '${CLUSTER_NAME}' already exists"
-        read -p "Do you want to delete it and start fresh? [y/N] " -n 1 -r
+
+        if [ "$FORCE_MODE" = true ]; then
+            log_info "Force mode: deleting existing cluster..."
+            k3d cluster delete "${CLUSTER_NAME}"
+            log_success "Cluster deleted"
+            return
+        fi
+
+        # Try to read from /dev/tty (works when script is piped)
+        if [ -t 0 ]; then
+            read -p "Do you want to delete it and start fresh? [y/N] " -n 1 -r
+        else
+            read -p "Do you want to delete it and start fresh? [y/N] " -n 1 -r </dev/tty 2>/dev/null || {
+                log_error "Cannot prompt for input. Use --force to auto-delete existing cluster."
+                exit 1
+            }
+        fi
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             log_info "Deleting existing cluster..."
             k3d cluster delete "${CLUSTER_NAME}"
             log_success "Cluster deleted"
         else
-            log_error "Aborting. Please delete the cluster manually or use a different name."
+            log_error "Aborting. Please delete the cluster manually or use --force."
             exit 1
         fi
     fi
