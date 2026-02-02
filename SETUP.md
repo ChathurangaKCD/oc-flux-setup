@@ -2,6 +2,21 @@
 
 Detailed instructions for setting up OpenChoreo on a k3d cluster using Flux GitOps.
 
+## Quick Start
+
+Bootstrap everything with a single command:
+
+```bash
+export GITHUB_TOKEN=<your-github-pat>
+curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/scripts/bootstrap.sh | bash
+```
+
+This will:
+- Create the k3d cluster with the correct configuration
+- Generate machine-id for FluentBit log collection
+- Start nginx proxy for control plane access
+- Bootstrap Flux GitOps
+
 ## Prerequisites
 
 - k3d v5.8+
