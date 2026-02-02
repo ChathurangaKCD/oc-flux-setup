@@ -7,25 +7,24 @@ servers: 1
 agents: 0
 kubeAPI:
   hostPort: "6550"
-# VM note: Only ports 8080 and 9080 are exposed externally on the VM
-# nginx proxy runs on 8080/9080, k3d uses internal ports 18080/19080
+# Single cluster mode exposes all plane port ranges for consistency with multi-cluster setup
 ports:
-  # Control Plane - nginx proxies 8080→18080
+  # Control Plane uses port range 8xxx
   # HTTP traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 80)
-  - port: 18080:80
+  - port: 18080:80  # nginx proxies 8080→18080
     nodeFilters:
       - loadbalancer
   # HTTPS traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 443)
   - port: 8443:443
     nodeFilters:
       - loadbalancer
-  # Data Plane - direct access (no nginx needed, Envoy doesn't have HSTS/CSP)
+  # Data Plane uses port range 19xxx (matches kind and other cluster setups)
   # HTTP traffic to workloads via Gateway
-  - port: 9080:9080
+  - port: 9080:9080  # changed from 19080
     nodeFilters:
       - loadbalancer
   # HTTPS traffic to workloads via Gateway
-  - port: 9443:9443
+  - port: 9443:9443  # changed from 19443
     nodeFilters:
       - loadbalancer
   # Build Plane uses port range 10xxx

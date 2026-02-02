@@ -91,20 +91,6 @@ openchoreovm.test
 
 ## Troubleshooting
 
-### Browser shows blank page or HTTPS redirect
-
-The nginx proxy may not be running. On the VM:
-
-```bash
-# Check nginx status
-sudo docker ps | grep nginx-proxy
-
-# Restart nginx proxy
-curl -fsSL https://raw.githubusercontent.com/ChathurangaKCD/oc-flux-setup/main/nginx-proxy.conf -o /tmp/nginx-proxy.conf && \
-  sudo docker rm -f nginx-proxy 2>/dev/null; \
-  sudo docker run -d --name nginx-proxy --network host -v /tmp/nginx-proxy.conf:/etc/nginx/nginx.conf:ro nginx:alpine
-```
-
 ### DNS not resolving
 
 Verify `/etc/hosts` entry:
@@ -114,19 +100,14 @@ Verify `/etc/hosts` entry:
 ping -c 1 openchoreovm.test
 ```
 
-### Connection refused
-
-Check if ports are open on VM:
-
-```bash
-# From VM
-ss -tlnp | grep -E "8080|9080"
-```
-
 ### Clear browser HSTS cache
 
-If you previously accessed the site with HSTS headers cached:
+If the browser redirects to HTTPS despite the nginx proxy:
 
 1. Go to `chrome://net-internals/#hsts`
 2. Enter `openchoreovm.test` in "Delete domain security policies"
 3. Click "Delete"
+
+### VM-side issues
+
+For issues like blank pages, connection refused, or nginx proxy problems, see the [Troubleshooting section in SETUP.md](SETUP.md#troubleshooting).

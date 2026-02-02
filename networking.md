@@ -105,7 +105,7 @@ Request: `http://api.openchoreovm.test:8080`
 │  │                                                                     │    │
 │  │  ┌─────────────────────────────────────────────────────────────┐    │    │
 │  │  │  Container: k3d-openchoreo-serverlb                         │    │    │
-│  │  │  - Binds to host ports: 8080, 9080                          │    │    │
+│  │  │  - Binds to host ports: 18080, 9080                         │    │    │
 │  │  │  - Forwards traffic to k3d-openchoreo-server-0              │    │    │
 │  │  │  - Simple TCP proxy (nginx-based)                           │    │    │
 │  │  └──────────────────────────┬──────────────────────────────────┘    │    │
@@ -159,44 +159,17 @@ After adding hosts entries pointing to the VM IP:
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
 
-## nginx Proxy Setup
+## nginx Proxy
 
 The nginx proxy is required for the **control plane only** to strip HSTS and CSP headers that break HTTP-only browser access. The data plane (Envoy) doesn't have these headers, so it connects directly to k3d.
 
-```bash
-# Create nginx config
-cat > /tmp/nginx.conf << 'EOF'
-events {
-    worker_connections 1024;
-}
+**What nginx does:**
+- Listens on port 8080 (external)
+- Proxies to k3d on port 18080
+- Strips `Strict-Transport-Security` header
+- Strips `Content-Security-Policy` header (which includes `upgrade-insecure-requests`)
 
-http {
-    # Control Plane proxy: 8080 -> 18080
-    # Strips HSTS and CSP headers from Backstage UI
-    # Data plane (port 9080) doesn't need proxy - Envoy doesn't have these headers
-    server {
-        listen 8080;
-        location / {
-            proxy_pass http://127.0.0.1:18080;
-            proxy_http_version 1.1;
-            proxy_set_header Host $http_host;
-            proxy_set_header Connection "";
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_hide_header Strict-Transport-Security;
-            proxy_hide_header Content-Security-Policy;
-        }
-    }
-}
-EOF
-
-# Start nginx proxy
-sudo docker run -d --name nginx-proxy --network host \
-  -v /tmp/nginx.conf:/etc/nginx/nginx.conf:ro nginx:alpine
-
-# Check nginx status
-sudo docker ps | grep nginx-proxy
-sudo docker logs nginx-proxy
-```
+See [SETUP.md](SETUP.md#2-start-nginx-proxy) for installation instructions and [nginx-proxy.conf](nginx-proxy.conf) for the full configuration.
 
 ## Debugging Commands
 
@@ -231,10 +204,8 @@ docker ps | grep k3d
 - Verify the Host header matches exactly (including port if specified)
 - Check gateway-default pod logs for routing errors
 
-### Connection refused on port 8080
-- Verify k3d-serverlb container is running: `docker ps | grep serverlb`
-- Check if gateway-default service has external IP assigned
-- Ensure no other service is competing for port 80 (e.g., traefik)
+### Connection refused
+- See [SETUP.md Troubleshooting](SETUP.md#troubleshooting) for port verification and nginx issues
 
 ### Traefik conflicts
 The OpenChoreo k3d config disables traefik (`--disable=traefik`). If traefik is running:

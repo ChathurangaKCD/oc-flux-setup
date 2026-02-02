@@ -22,6 +22,10 @@ LOCAL_DP_HTTP_PORT="9080"
 UPSTREAM_DP_HTTPS_PORT="19443"
 LOCAL_DP_HTTPS_PORT="9443"
 
+# Control plane port (nginx proxies 8080→18080)
+UPSTREAM_CP_HTTP_PORT="8080"
+LOCAL_CP_HTTP_PORT="18080"
+
 # Target directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -70,6 +74,36 @@ fetch_and_transform() {
     echo -e "${GREEN}  Written to: ${local_file}${NC}"
 }
 
+# Function to fetch and transform the k3d config file
+fetch_and_transform_k3d_config() {
+    local upstream_file="config.yaml"
+    local local_file="$REPO_ROOT/k3d-config.yaml"
+
+    local url="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${REF}/${UPSTREAM_PATH}/${upstream_file}"
+
+    echo -e "${YELLOW}Fetching k3d config...${NC}"
+    echo "  URL: $url"
+
+    # Fetch the file
+    local content
+    if ! content=$(curl -fsSL "$url" 2>/dev/null); then
+        echo -e "${RED}  ERROR: Failed to fetch ${upstream_file}${NC}"
+        return 1
+    fi
+
+    # Apply control plane port replacement (8080:80 → 18080:80)
+    # nginx proxies external 8080 to k3d 18080
+    content=$(echo "$content" | sed "s/${UPSTREAM_CP_HTTP_PORT}:80/${LOCAL_CP_HTTP_PORT}:80  # nginx proxies 8080→18080/g")
+
+    # Apply data plane port replacements with comments
+    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTP_PORT}:${UPSTREAM_DP_HTTP_PORT}/${LOCAL_DP_HTTP_PORT}:${LOCAL_DP_HTTP_PORT}  # changed from ${UPSTREAM_DP_HTTP_PORT}/g")
+    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTPS_PORT}:${UPSTREAM_DP_HTTPS_PORT}/${LOCAL_DP_HTTPS_PORT}:${LOCAL_DP_HTTPS_PORT}  # changed from ${UPSTREAM_DP_HTTPS_PORT}/g")
+
+    # Write to local file
+    echo "$content" > "$local_file"
+    echo -e "${GREEN}  Written to: ${local_file}${NC}"
+}
+
 # Fetch each values file
 echo ""
 fetch_and_transform "values-cp.yaml" "$APPS_DIR/openchoreo-control-plane/values.yaml" "Control Plane"
@@ -81,6 +115,9 @@ echo ""
 fetch_and_transform "values-registry.yaml" "$APPS_DIR/openchoreo-build-plane/values-registry.yaml" "Registry"
 echo ""
 fetch_and_transform "values-op.yaml" "$APPS_DIR/openchoreo-observability-plane/values.yaml" "Observability Plane"
+
+echo ""
+fetch_and_transform_k3d_config
 
 # Write version file
 echo "${REF#v}" > "$REPO_ROOT/VERSION"
@@ -95,8 +132,9 @@ echo "  Domains:"
 echo "    ${UPSTREAM_DOMAIN} -> ${LOCAL_DOMAIN}"
 echo "    ${UPSTREAM_DP_DOMAIN} -> ${LOCAL_DP_DOMAIN}"
 echo "  Ports:"
-echo "    ${UPSTREAM_DP_HTTP_PORT} -> ${LOCAL_DP_HTTP_PORT}"
-echo "    ${UPSTREAM_DP_HTTPS_PORT} -> ${LOCAL_DP_HTTPS_PORT}"
+echo "    ${UPSTREAM_CP_HTTP_PORT}:80 -> ${LOCAL_CP_HTTP_PORT}:80 (control plane, k3d config)"
+echo "    ${UPSTREAM_DP_HTTP_PORT} -> ${LOCAL_DP_HTTP_PORT} (data plane)"
+echo "    ${UPSTREAM_DP_HTTPS_PORT} -> ${LOCAL_DP_HTTPS_PORT} (data plane)"
 echo ""
 echo "Review changes with: git diff"
 echo "Commit with: git add -A && git commit -m 'Sync values from upstream ${REF}'"

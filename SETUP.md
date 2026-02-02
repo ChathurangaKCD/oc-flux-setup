@@ -252,6 +252,19 @@ If you see "no matches for kind ClusterWorkflowTemplate" or similar:
 - Ensure `argo-workflows-crds` or `external-secrets-crds` HelmReleases are Ready
 - Check that main releases have proper `dependsOn` referencing the CRD releases
 
+### Connection refused / ports not listening
+
+Verify the expected ports are open:
+
+```bash
+ss -tlnp | grep -E "8080|9080|18080"
+```
+
+Expected:
+- `8080` - nginx proxy (control plane)
+- `9080` - k3d data plane
+- `18080` - k3d control plane (behind nginx)
+
 ### nginx proxy issues
 
 ```bash
