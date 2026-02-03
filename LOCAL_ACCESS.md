@@ -61,6 +61,18 @@ echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/test
 
 **Default credentials:** `admin@openchoreo.dev` / `Admin@123`
 
+## Troubleshooting
+
+### `crypto.randomUUID` is not a function
+
+The Console UI uses `crypto.randomUUID()` which is only available in secure contexts (HTTPS or localhost). Since we access over plain HTTP with a custom domain, Chrome blocks this API.
+
+**Fix:** Add the origin to Chrome's insecure origin allowlist:
+
+1. Open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`
+2. Add `http://openchoreovm.test:8080` to the list
+3. Restart Chrome
+
 ## Domain Structure
 
 All domains are under `openchoreovm.test`:
