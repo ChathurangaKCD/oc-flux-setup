@@ -3,6 +3,7 @@
 global:
   # Single-cluster non-HA mode uses standalone OpenSearch instead of operator
   installationMode: singleCluster
+  baseDomain: openchoreovm.test
 
 # Use standalone OpenSearch (not operator-managed cluster)
 openSearch:
@@ -24,10 +25,6 @@ openSearchDashboards:
   service:
     type: LoadBalancer
 
-# Disable External Secrets since it's already in the Data Plane (single cluster)
-external-secrets:
-  enabled: false
-
 fakeSecretStore:
   enabled: false
 
@@ -35,3 +32,8 @@ security:
   oidc:
     jwksUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/jwks"
     tokenUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/token"
+
+gateway:
+  enabled: true
+  envoy:
+    mountTmpVolume: true
