@@ -5,3 +5,5 @@ resources:
   - sources/helm-repositories.yaml
   - cert-manager/namespace.yaml
   - cert-manager/helmrelease.yaml
+  - external-secrets/namespace.yaml
+  - external-secrets/helmrelease.yaml

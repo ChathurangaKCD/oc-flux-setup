@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - cert-resources.yaml
-  - eso-crds-helmrelease.yaml
   - helmrelease.yaml
 configMapGenerator:
   - name: openchoreo-data-plane-values
