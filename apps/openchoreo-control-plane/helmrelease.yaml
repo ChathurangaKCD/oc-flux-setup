@@ -9,6 +9,8 @@ spec:
   dependsOn:
     - name: cert-manager
       namespace: cert-manager
+    - name: kgateway-crds
+      namespace: kube-system
   chart:
     spec:
       chart: openchoreo-control-plane
@@ -18,7 +20,7 @@ spec:
         name: openchoreo
         namespace: flux-system
       interval: 12h
-  timeout: 10m
+  timeout: 15m
   install:
     remediation:
       retries: 3
