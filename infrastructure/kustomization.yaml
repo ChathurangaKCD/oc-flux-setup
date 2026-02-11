@@ -8,3 +8,4 @@ resources:
   - cert-manager/helmrelease.yaml
   - external-secrets/namespace.yaml
   - external-secrets/helmrelease.yaml
+  - kgateway-crds/helmrelease.yaml

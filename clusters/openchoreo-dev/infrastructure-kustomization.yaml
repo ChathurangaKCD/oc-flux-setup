@@ -22,3 +22,7 @@ spec:
       kind: HelmRelease
       name: external-secrets
       namespace: external-secrets
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: kgateway-crds
+      namespace: kube-system
