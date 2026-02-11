@@ -6,6 +6,7 @@ metadata:
   namespace: openchoreo-observability-plane
 spec:
   interval: 30m
+  timeout: 10m
   dependsOn:
     - name: openchoreo-control-plane
       namespace: openchoreo-control-plane
