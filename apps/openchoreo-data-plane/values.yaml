@@ -15,7 +15,3 @@ gateway:
 # Reuse the existing control plane's cluster gateway controller
 gatewayController:
   enabled: false
-
-# ESO is installed separately in the external-secrets namespace
-external-secrets:
-  enabled: false
