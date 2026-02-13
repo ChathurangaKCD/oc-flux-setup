@@ -11,3 +11,5 @@ resources:
   - openchoreo-observability-plane-kustomization.yaml
   # Plane CRs - depends on control-plane (CRDs must exist)
   - plane-crs-kustomization.yaml
+  # Getting-started resources (project, environments, component types, workflows, traits)
+  - getting-started-kustomization.yaml
