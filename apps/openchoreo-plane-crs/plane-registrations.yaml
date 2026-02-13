@@ -48,7 +48,7 @@ spec:
         namespace: openchoreo-build-plane
         key: ca.crt
   secretStoreRef:
-    name: default
+    name: openbao
   observabilityPlaneRef: default
 ---
 # ObservabilityPlane CR - registers observability plane with control plane

@@ -1,10 +1,5 @@
 # Helm values for OpenChoreo Observability Plane in k3d single-cluster setup
 
-global:
-  # Single-cluster non-HA mode uses standalone OpenSearch instead of operator
-  installationMode: singleCluster
-  baseDomain: openchoreovm.test
-
 # Use standalone OpenSearch (not operator-managed cluster)
 openSearch:
   enabled: true
@@ -19,14 +14,14 @@ openSearchCluster:
 observer:
   service:
     type: LoadBalancer
+  http:
+    hostnames:
+    - observer.openchoreovm.test
 
 # OpenSearch Dashboards - UI for visualizing logs and data
 openSearchDashboards:
   service:
     type: LoadBalancer
-
-fakeSecretStore:
-  enabled: false
 
 security:
   oidc:
@@ -35,5 +30,6 @@ security:
 
 gateway:
   enabled: true
+  tlsHostname: "opensearch.openchoreovm.test"
   envoy:
     mountTmpVolume: true
