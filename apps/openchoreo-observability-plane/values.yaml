@@ -1,5 +1,8 @@
 # Helm values for OpenChoreo Observability Plane in k3d single-cluster setup
 
+global:
+  baseDomain: openchoreovm.test
+
 # Use standalone OpenSearch (not operator-managed cluster)
 openSearch:
   enabled: true
