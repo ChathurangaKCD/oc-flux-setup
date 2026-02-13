@@ -1,18 +1,9 @@
 # Helm values for OpenChoreo Control Plane in k3d single-cluster setup
 
-openchoreoApi:
-  http:
-    hostnames:
-    - api.openchoreovm.test
-  config:
-    server:
-      publicUrl: "http://api.openchoreovm.test:8080"
-
-backstage:
-  baseUrl: "http://openchoreovm.test:8080"
-  http:
-    hostnames:
-    - openchoreovm.test
+global:
+  baseDomain: openchoreovm.test
+  # Port suffix for URLs (k3d maps host:8080 -> container:80)
+  port: ":8080"
 
 security:
   oidc:
@@ -23,9 +14,6 @@ security:
 
 thunder:
   fullnameOverride: thunder
-  http:
-    hostnames:
-    - thunder.openchoreovm.test
   configuration:
     server:
       publicUrl: "http://thunder.openchoreovm.test:8080"
