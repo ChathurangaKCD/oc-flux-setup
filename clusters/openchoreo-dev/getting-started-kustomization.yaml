@@ -6,11 +6,11 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./apps/openchoreo-getting-started
+  path: ./samples/getting-started
   prune: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: openchoreo
   # Wait for plane CRs to be registered before creating projects/environments
   # Getting-started resources reference DataPlane 'default' via Environment CRs
   dependsOn:

@@ -64,3 +64,15 @@ spec:
   type: oci
   interval: 1h
   url: oci://cr.kgateway.dev/kgateway-dev/charts
+---
+# GitRepository for openchoreo samples (getting-started resources)
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: openchoreo
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://github.com/openchoreo/openchoreo
+  ref:
+    tag: v0.14.0
