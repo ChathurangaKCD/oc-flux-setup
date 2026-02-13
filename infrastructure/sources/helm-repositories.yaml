@@ -64,3 +64,25 @@ spec:
   type: oci
   interval: 1h
   url: oci://cr.kgateway.dev/kgateway-dev/charts
+---
+# GitRepository for openchoreo getting-started samples
+# Uses spec.ignore to only include samples/getting-started/all.yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: openchoreo
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://github.com/openchoreo/openchoreo
+  ref:
+    tag: v0.14.0
+  ignore: |
+    # exclude everything
+    /*
+    # include only samples/getting-started/all.yaml
+    !/samples/
+    !/samples/getting-started/
+    !/samples/getting-started/all.yaml
+    /samples/getting-started/*
+    !/samples/getting-started/all.yaml
