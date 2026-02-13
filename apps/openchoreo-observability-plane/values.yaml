@@ -14,9 +14,6 @@ openSearchCluster:
 observer:
   service:
     type: LoadBalancer
-  http:
-    hostnames:
-    - observer.openchoreovm.test
 
 # OpenSearch Dashboards - UI for visualizing logs and data
 openSearchDashboards:
@@ -30,6 +27,5 @@ security:
 
 gateway:
   enabled: true
-  tlsHostname: "opensearch.openchoreovm.test"
   envoy:
     mountTmpVolume: true
