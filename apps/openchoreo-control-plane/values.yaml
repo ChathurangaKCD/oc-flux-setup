@@ -8,9 +8,9 @@ global:
 security:
   oidc:
     issuer: "http://thunder.openchoreovm.test:8080"
-    jwksUrl: "http://thunder.openchoreo-control-plane.svc.cluster.local:8090/oauth2/jwks"
+    jwksUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/jwks"
     authorizationUrl: "http://thunder.openchoreovm.test:8080/oauth2/authorize"
-    tokenUrl: "http://thunder.openchoreo-control-plane.svc.cluster.local:8090/oauth2/token"
+    tokenUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/token"
 
 thunder:
   fullnameOverride: thunder
