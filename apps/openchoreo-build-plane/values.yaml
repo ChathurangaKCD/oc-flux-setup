@@ -6,16 +6,14 @@ argo-workflows:
     # Argo Workflows UI is enabled for testing/development purposes
     enabled: true
     serviceType: LoadBalancer
-    servicePort: 2746
+    servicePort: 10081
     authModes:
       - server
 
-global:
-  defaultResources:
-    registry:
-      host: "host.k3d.internal:10082"
-    buildpackCache:
-      enabled: true
+defaultResources:
+  enabled: true
+  registry:
+    host: "host.k3d.internal:10082"
 
 openbao:
   server:
