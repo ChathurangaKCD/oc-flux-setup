@@ -22,9 +22,6 @@ security:
     authorizationUrl: "http://thunder.openchoreovm.test:8080/oauth2/authorize"
     tokenUrl: "http://thunder.openchoreovm.test:8080/oauth2/token"
 
-thunder:
-  host: thunder.openchoreovm.test
-
 gateway:
   httpPort: 8080
   httpsPort: 8443
