@@ -9,8 +9,3 @@ argo-workflows:
     servicePort: 10081
     authModes:
       - server
-
-openbao:
-  server:
-    dev:
-      enabled: true

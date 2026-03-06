@@ -24,8 +24,14 @@ openSearchDashboards:
 
 security:
   oidc:
-    jwksUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/jwks"
-    tokenUrl: "http://thunder-service.openchoreo-control-plane.svc.cluster.local:8090/oauth2/token"
+    jwksUrl: "http://thunder-service.thunder.svc.cluster.local:8090/oauth2/jwks"
+    tokenUrl: "http://thunder-service.thunder.svc.cluster.local:8090/oauth2/token"
+    authServerBaseUrl: "http://thunder.openchoreovm.test:8080"
+
+rca:
+  http:
+    hostnames:
+    - rca-agent.openchoreovm.test
 
 gateway:
   httpPort: 11080
