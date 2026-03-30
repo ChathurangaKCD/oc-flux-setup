@@ -62,7 +62,7 @@ spec:
               echo "Creating reader role for data plane..."
               bao write auth/kubernetes/role/openchoreo-secret-reader-role \
                 bound_service_account_names=default \
-                bound_service_account_namespaces='dp*' \
+                bound_service_account_namespaces='openchoreo-data-plane' \
                 policies=openchoreo-secret-reader-policy \
                 ttl=20m
 

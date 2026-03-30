@@ -5,8 +5,8 @@ metadata:
   name: thunder
   namespace: thunder
 spec:
-  interval: 30m
-  timeout: 15m
+  interval: 10m
+  timeout: 25m
   chart:
     spec:
       chart: thunder
