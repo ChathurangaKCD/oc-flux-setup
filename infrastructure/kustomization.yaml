@@ -8,6 +8,7 @@ resources:
   - cert-manager/helmrelease.yaml
   - external-secrets/namespace.yaml
   - external-secrets/helmrelease.yaml
+  - kgateway-crds/namespace.yaml
   - kgateway-crds/helmrelease.yaml
   - kgateway/helmrelease.yaml
   - openbao

@@ -1,0 +1,9 @@
+---
+# Create openchoreo-control-plane namespace early for kgateway components
+# This namespace is also referenced by the control-plane app kustomization
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-control-plane
+  labels:
+    toolkit.fluxcd.io/tenant: openchoreo
