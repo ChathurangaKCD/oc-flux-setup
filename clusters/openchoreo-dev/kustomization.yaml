@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   # Infrastructure (cert-manager, ESO, kgateway, OpenBao) - as a separate Flux Kustomization with healthChecks
   - infrastructure-kustomization.yaml
+  # OpenBao init (Job + ClusterSecretStore) - depends on infrastructure (ESO CRDs)
+  - openbao-init-kustomization.yaml
   # Thunder IDP - separate from control plane
   - thunder-kustomization.yaml
   # OpenChoreo planes - each as a separate Flux Kustomization for proper dependency ordering
