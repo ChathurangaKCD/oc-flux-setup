@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - cert-resources.yaml
+  - backstage-secrets.yaml
+  - coredns-custom.yaml
   - helmrelease.yaml
 configMapGenerator:
   - name: openchoreo-control-plane-values

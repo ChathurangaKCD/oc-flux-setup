@@ -1,5 +1,5 @@
-# Helm values for OpenChoreo Build Plane in k3d single-cluster setup
-# This file contains overrides specific to running the build plane in a k3d environment
+# Helm values for OpenChoreo Workflow Plane
+# Adapted from upstream install/k3d/single-cluster/values-wp.yaml
 
 argo-workflows:
   server:

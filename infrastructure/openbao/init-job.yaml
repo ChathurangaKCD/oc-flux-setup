@@ -1,0 +1,105 @@
+---
+# ServiceAccount for ESO to authenticate with OpenBao
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-secrets-openbao
+  namespace: openbao
+---
+# Job to initialize OpenBao: enable k8s auth, create policies/roles, seed dev secrets
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-init
+  namespace: openbao
+  annotations:
+    # Allow Flux to recreate this Job when needed
+    kustomize.toolkit.fluxcd.io/force: "enabled"
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      serviceAccountName: external-secrets-openbao
+      containers:
+        - name: init
+          image: ghcr.io/openbao/openbao:2.4.4
+          env:
+            - name: BAO_ADDR
+              value: "http://openbao.openbao.svc:8200"
+            - name: BAO_TOKEN
+              value: "root"
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              echo "Waiting for OpenBao to be ready..."
+              until bao status 2>/dev/null; do sleep 2; done
+
+              echo "Enabling Kubernetes authentication..."
+              bao auth enable kubernetes 2>/dev/null || true
+              bao write auth/kubernetes/config \
+                kubernetes_host="https://${KUBERNETES_PORT_443_TCP_ADDR}:443"
+
+              echo "Creating reader policy..."
+              bao policy write openchoreo-secret-reader-policy - <<'POLICY'
+              path "secret/data/*" {
+                capabilities = ["read"]
+              }
+              path "secret/metadata/*" {
+                capabilities = ["list", "read"]
+              }
+              POLICY
+
+              echo "Creating writer policy..."
+              bao policy write openchoreo-secret-writer-policy - <<'POLICY'
+              path "secret/data/*" {
+                capabilities = ["create", "read", "update", "delete"]
+              }
+              path "secret/metadata/*" {
+                capabilities = ["create", "read", "update", "delete", "list"]
+              }
+              POLICY
+
+              echo "Creating reader role for data plane..."
+              bao write auth/kubernetes/role/openchoreo-secret-reader-role \
+                bound_service_account_names=default \
+                bound_service_account_namespaces='dp*' \
+                policies=openchoreo-secret-reader-policy \
+                ttl=20m
+
+              echo "Creating writer role for workflow plane..."
+              bao write auth/kubernetes/role/openchoreo-secret-writer-role \
+                bound_service_account_names='*' \
+                bound_service_account_namespaces='openbao,openchoreo-workflow-plane' \
+                policies=openchoreo-secret-writer-policy \
+                ttl=20m
+
+              echo "Seeding development secrets..."
+              bao kv put secret/backstage-backend-secret value='local-dev-backend-secret'
+              bao kv put secret/backstage-client-secret value='backstage-portal-secret'
+              bao kv put secret/backstage-jenkins-api-key value='placeholder-not-in-use'
+              bao kv put secret/opensearch-username value='admin'
+              bao kv put secret/opensearch-password value='ThisIsTheOpenSearchPassword1'
+              bao kv put secret/observer-oauth-client-secret value='openchoreo-observer-resource-reader-client-secret'
+              bao kv put secret/rca-oauth-client-secret value='openchoreo-rca-agent-secret'
+
+              echo "OpenBao initialization complete."
+      restartPolicy: OnFailure
+---
+# ClusterSecretStore backed by OpenBao for all planes
+apiVersion: external-secrets.io/v1
+kind: ClusterSecretStore
+metadata:
+  name: default
+spec:
+  provider:
+    vault:
+      server: "http://openbao.openbao.svc:8200"
+      path: "secret"
+      version: "v2"
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "openchoreo-secret-writer-role"
+          serviceAccountRef:
+            name: "external-secrets-openbao"
+            namespace: "openbao"

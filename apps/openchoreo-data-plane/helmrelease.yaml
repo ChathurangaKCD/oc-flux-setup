@@ -13,14 +13,13 @@ spec:
   chart:
     spec:
       chart: openchoreo-data-plane
-      version: "0.17.0"
+      version: "1.0.0-rc.1"
       sourceRef:
         kind: HelmRepository
         name: openchoreo
         namespace: flux-system
       interval: 12h
   install:
-    # Retry on CRD timing issues (external-secrets CRDs installed by chart dependencies)
     remediation:
       retries: 3
       remediateLastFailure: true

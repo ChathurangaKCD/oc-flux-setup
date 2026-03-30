@@ -2,14 +2,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  # Infrastructure (cert-manager) - as a separate Flux Kustomization with healthChecks
+  # Infrastructure (cert-manager, ESO, kgateway, OpenBao) - as a separate Flux Kustomization with healthChecks
   - infrastructure-kustomization.yaml
+  # Thunder IDP - separate from control plane
+  - thunder-kustomization.yaml
   # OpenChoreo planes - each as a separate Flux Kustomization for proper dependency ordering
   - openchoreo-control-plane-kustomization.yaml
   - openchoreo-data-plane-kustomization.yaml
-  - openchoreo-build-plane-kustomization.yaml
+  - openchoreo-workflow-plane-kustomization.yaml
   - openchoreo-observability-plane-kustomization.yaml
-  # Plane CRs - depends on control-plane (CRDs must exist)
+  # Plane CRs - depends on all planes (secrets must exist)
   - plane-crs-kustomization.yaml
   # Getting-started resources (project, environments, component types, workflows, traits)
   - getting-started-kustomization.yaml

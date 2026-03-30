@@ -1,9 +1,10 @@
-# Helm values for OpenChoreo Control Plane in k3d single-cluster setup
+# Helm values for OpenChoreo Control Plane
+# Adapted from upstream install/k3d/single-cluster/values-cp.yaml for openchoreovm.test
 
 openchoreoApi:
   http:
     hostnames:
-    - api.openchoreovm.test
+      - api.openchoreovm.test
   config:
     server:
       publicUrl: "http://api.openchoreovm.test:8080"
@@ -13,7 +14,7 @@ backstage:
   baseUrl: "http://openchoreovm.test:8080"
   http:
     hostnames:
-    - openchoreovm.test
+      - openchoreovm.test
 
 security:
   oidc:

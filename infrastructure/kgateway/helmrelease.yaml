@@ -2,34 +2,29 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: openchoreo-control-plane
+  name: kgateway
   namespace: openchoreo-control-plane
 spec:
   interval: 30m
   dependsOn:
-    - name: cert-manager
-      namespace: cert-manager
     - name: kgateway-crds
-      namespace: openchoreo-control-plane
-    - name: kgateway
       namespace: openchoreo-control-plane
   chart:
     spec:
-      chart: openchoreo-control-plane
-      version: "1.0.0-rc.1"
+      chart: kgateway
+      version: "v2.2.1"
       sourceRef:
         kind: HelmRepository
-        name: openchoreo
+        name: kgateway
         namespace: flux-system
       interval: 12h
-  timeout: 15m
   install:
     remediation:
       retries: 3
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: openchoreo-control-plane-values
-      valuesKey: values.yaml
+  values:
+    controller:
+      extraEnv:
+        KGW_ENABLE_GATEWAY_API_EXPERIMENTAL_FEATURES: "true"

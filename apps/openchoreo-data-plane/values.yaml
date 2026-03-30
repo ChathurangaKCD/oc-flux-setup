@@ -1,9 +1,10 @@
-# Helm values for OpenChoreo Data Plane in k3d single-cluster setup
+# Helm values for OpenChoreo Data Plane
+# Adapted from upstream install/k3d/single-cluster/values-dp.yaml for openchoreovm.test
 
 # Gateway configuration for single-cluster setup
 gateway:
-  httpPort: 9080
-  httpsPort: 9443
+  httpPort: 19080
+  httpsPort: 19443
   tls:
     enabled: false
 

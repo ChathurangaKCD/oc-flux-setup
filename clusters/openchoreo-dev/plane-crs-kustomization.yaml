@@ -16,5 +16,5 @@ spec:
   dependsOn:
     - name: openchoreo-control-plane
     - name: openchoreo-data-plane
-    - name: openchoreo-build-plane
+    - name: openchoreo-workflow-plane
     - name: openchoreo-observability-plane

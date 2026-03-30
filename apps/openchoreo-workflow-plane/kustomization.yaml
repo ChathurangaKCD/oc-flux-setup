@@ -7,12 +7,12 @@ resources:
   - registry-helmrelease.yaml
   - helmrelease.yaml
 configMapGenerator:
-  - name: openchoreo-build-plane-values
-    namespace: openchoreo-build-plane
+  - name: openchoreo-workflow-plane-values
+    namespace: openchoreo-workflow-plane
     files:
       - values.yaml
   - name: registry-values
-    namespace: openchoreo-build-plane
+    namespace: openchoreo-workflow-plane
     files:
       - values-registry.yaml
 generatorOptions:

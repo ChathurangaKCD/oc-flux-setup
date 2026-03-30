@@ -39,15 +39,6 @@ spec:
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: external-secrets
-  namespace: flux-system
-spec:
-  interval: 1h
-  url: https://charts.external-secrets.io
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
   name: external-secrets-oci
   namespace: flux-system
 spec:
@@ -65,8 +56,27 @@ spec:
   interval: 1h
   url: oci://cr.kgateway.dev/kgateway-dev/charts
 ---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: asgardeo
+  namespace: flux-system
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/asgardeo/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/openbao/charts
+---
 # GitRepository for openchoreo getting-started samples
-# Uses spec.ignore to only include samples/getting-started/all.yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -76,13 +86,16 @@ spec:
   interval: 1h
   url: https://github.com/openchoreo/openchoreo
   ref:
-    tag: v0.14.0
+    tag: v1.0.0-rc.1
   ignore: |
     # exclude everything
     /*
-    # include only samples/getting-started/all.yaml
+    # include samples/getting-started/ selectively to avoid duplicates
     !/samples/
     !/samples/getting-started/
+    # all.yaml has core OpenChoreo CRs (Project, Environment, ComponentType, etc.)
     !/samples/getting-started/all.yaml
-    /samples/getting-started/*
-    !/samples/getting-started/all.yaml
+    # Argo ClusterWorkflowTemplates
+    !/samples/getting-started/workflow-templates.yaml
+    !/samples/getting-started/workflow-templates/
+    !/samples/getting-started/workflow-templates/**

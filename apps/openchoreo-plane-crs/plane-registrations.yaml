@@ -1,16 +1,11 @@
 ---
-# DataPlane CR - registers data plane with control plane
-# Name 'default' matches the single-cluster setup convention
+# ClusterDataPlane CR - registers data plane with control plane
 apiVersion: openchoreo.dev/v1alpha1
-kind: DataPlane
+kind: ClusterDataPlane
 metadata:
   name: default
-  namespace: default
-  annotations:
-    openchoreo.dev/description: "DataPlane for single-cluster k3d setup"
-    openchoreo.dev/display-name: "DataPlane default"
 spec:
-  planeID: default-dataplane
+  planeID: default
   clusterAgent:
     clientCA:
       secretRef:
@@ -20,49 +15,38 @@ spec:
   secretStoreRef:
     name: default
   gateway:
-    organizationVirtualHost: openchoreoapis.internal
-    publicVirtualHost: dp.openchoreovm.test
-    # Ports must match the gateway service ports (set in data-plane values.yaml)
-    publicHTTPPort: 9080
-    publicHTTPSPort: 9443
-    organizationHTTPPort: 9081
-    organizationHTTPSPort: 9444
-  observabilityPlaneRef: default
+    ingress:
+      external:
+        http:
+          host: openchoreoapis.openchoreovm.test
+          listenerName: http
+          port: 19080
+        name: gateway-default
+        namespace: openchoreo-data-plane
 ---
-# BuildPlane CR - registers build plane with control plane
-# Name 'default' matches the single-cluster setup convention
+# ClusterWorkflowPlane CR - registers workflow plane with control plane
 apiVersion: openchoreo.dev/v1alpha1
-kind: BuildPlane
+kind: ClusterWorkflowPlane
 metadata:
   name: default
-  namespace: default
-  annotations:
-    openchoreo.dev/description: "BuildPlane for single-cluster k3d setup"
-    openchoreo.dev/display-name: "BuildPlane default"
 spec:
-  planeID: default-buildplane
+  planeID: default
   clusterAgent:
     clientCA:
       secretRef:
         name: cluster-agent-tls
-        namespace: openchoreo-build-plane
+        namespace: openchoreo-workflow-plane
         key: ca.crt
   secretStoreRef:
-    name: openbao
-  observabilityPlaneRef: default
+    name: default
 ---
-# ObservabilityPlane CR - registers observability plane with control plane
-# Name 'default' matches the single-cluster setup convention
+# ClusterObservabilityPlane CR - registers observability plane with control plane
 apiVersion: openchoreo.dev/v1alpha1
-kind: ObservabilityPlane
+kind: ClusterObservabilityPlane
 metadata:
   name: default
-  namespace: default
-  annotations:
-    openchoreo.dev/description: "ObservabilityPlane for single-cluster k3d setup"
-    openchoreo.dev/display-name: "ObservabilityPlane default"
 spec:
-  planeID: default-observabilityplane
+  planeID: default
   clusterAgent:
     clientCA:
       secretRef:

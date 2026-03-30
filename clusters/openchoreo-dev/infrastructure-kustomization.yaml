@@ -12,7 +12,7 @@ spec:
     kind: GitRepository
     name: flux-system
   # Wait for infrastructure components to be healthy before marking as Ready
-  # This ensures CRDs are installed before OpenChoreo planes try to use them
+  # This ensures CRDs and prerequisites are installed before OpenChoreo planes
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
@@ -25,4 +25,12 @@ spec:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
       name: kgateway-crds
-      namespace: kube-system
+      namespace: openchoreo-control-plane
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: kgateway
+      namespace: openchoreo-control-plane
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: openbao
+      namespace: openbao
