@@ -10,8 +10,9 @@ kubeAPI:
 # Single cluster mode exposes all plane port ranges for consistency with multi-cluster setup
 ports:
   # Control Plane uses port range 8xxx
-  # HTTP traffic to OpenChoreo UI and API (Kgateway LoadBalancer)
-  - port: 8080:8080
+  # HTTP traffic to OpenChoreo UI and API (Kgateway LoadBalancer on port 8080)
+  # nginx-proxy on VM proxies 8080→18080 to strip HSTS/CSP headers for HTTP-only access
+  - port: 18080:8080
     nodeFilters:
       - loadbalancer
   # HTTPS traffic to OpenChoreo UI and API (Kgateway LoadBalancer)
