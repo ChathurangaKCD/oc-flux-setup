@@ -86,16 +86,20 @@ spec:
   interval: 1h
   url: https://github.com/openchoreo/openchoreo
   ref:
-    tag: v1.0.0-rc.1
+    tag: v1.0.0
+  # Whitelist pattern (gitignore semantics): exclude everything, then walk down
+  # the tree re-including parent dirs and re-excluding unwanted siblings at each
+  # level. This is required because !/samples/getting-started/ on its own would
+  # recursively re-include EVERYTHING under getting-started, which causes
+  # kustomize build to fail with "may not add resource with an already
+  # registered id" (the per-resource files in ci-workflows/ etc. are already
+  # merged into all.yaml).
   ignore: |
-    # exclude everything
     /*
-    # include samples/getting-started/ selectively to avoid duplicates
-    !/samples/
-    !/samples/getting-started/
-    # all.yaml has core OpenChoreo CRs (Project, Environment, ComponentType, etc.)
+    !/samples
+    /samples/*
+    !/samples/getting-started
+    /samples/getting-started/*
     !/samples/getting-started/all.yaml
-    # Argo ClusterWorkflowTemplates
     !/samples/getting-started/workflow-templates.yaml
-    !/samples/getting-started/workflow-templates/
-    !/samples/getting-started/workflow-templates/**
+    !/samples/getting-started/workflow-templates
