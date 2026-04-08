@@ -29,7 +29,6 @@ spec:
     - kind: ConfigMap
       name: openchoreo-observability-plane-values
       valuesKey: values.yaml
-  # Local overrides (not synced from upstream)
-  values:
-    fluent-bit:
-      enabled: true
+  # Note: fluent-bit is no longer a top-level chart value in v1.0.0+.
+  # Logs/metrics/tracing modules are installed separately via observability modules
+  # (see https://openchoreo.dev/modules).
