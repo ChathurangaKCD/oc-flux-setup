@@ -103,3 +103,12 @@ spec:
     !/samples/getting-started/all.yaml
     !/samples/getting-started/workflow-templates.yaml
     !/samples/getting-started/workflow-templates
+    # workflow-templates/ has BOTH the merged builds (which are also in
+    # workflow-templates.yaml) and the k3d-specific helper templates the
+    # README tells you to apply individually (checkout-source,
+    # publish-image-k3d, generate-workload-k3d). Re-exclude the merged
+    # build files so we don't conflict with workflow-templates.yaml.
+    /samples/getting-started/workflow-templates/*
+    !/samples/getting-started/workflow-templates/checkout-source.yaml
+    !/samples/getting-started/workflow-templates/publish-image-k3d.yaml
+    !/samples/getting-started/workflow-templates/generate-workload-k3d.yaml
