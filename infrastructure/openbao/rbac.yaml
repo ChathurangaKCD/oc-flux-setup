@@ -1,0 +1,19 @@
+---
+# Grant OpenBao's service account permission to call Kubernetes TokenReview API.
+# Required for OpenBao's Kubernetes auth method to verify SA tokens submitted by
+# clients (e.g. ESO authenticating with the external-secrets-openbao SA).
+#
+# Without this binding, login attempts fail with HTTP 403 "permission denied"
+# and ClusterSecretStore stays in InvalidProviderConfig.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-auth-delegator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: openbao
+    namespace: openbao
