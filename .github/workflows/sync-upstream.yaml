@@ -67,12 +67,11 @@ jobs:
         run: |
           NEW_VERSION="${{ steps.latest.outputs.version_number }}"
 
-          # Update all HelmRelease files
-          for file in apps/*/helmrelease.yaml; do
+          # Only OpenChoreo plane HelmReleases (NOT apps/thunder, which has its own chart version)
+          for file in apps/openchoreo-*/helmrelease.yaml; do
             if [ -f "$file" ]; then
-              # Update version in chart spec (handles both quoted and unquoted)
-              sed -i "s/version: \"[0-9.]*\"/version: \"$NEW_VERSION\"/" "$file"
-              sed -i "s/version: [0-9.]*$/version: \"$NEW_VERSION\"/" "$file"
+              # Regex [^"]* so prerelease versions like "1.0.0-rc.1" are matched too
+              sed -i "s/version: \"[^\"]*\"/version: \"$NEW_VERSION\"/" "$file"
               echo "Updated $file to version $NEW_VERSION"
             fi
           done
@@ -81,7 +80,8 @@ jobs:
         if: steps.check.outputs.needs_update == 'true' || github.event.inputs.force == 'true'
         run: |
           NEW_VERSION="${{ steps.latest.outputs.version }}"
-          sed -i "s/DEFAULT_REF=\"v[0-9.]*\"/DEFAULT_REF=\"$NEW_VERSION\"/" scripts/sync-values.sh
+          # Regex [^"]* matches prerelease tags like v1.0.0-rc.1
+          sed -i "s/DEFAULT_REF=\"[^\"]*\"/DEFAULT_REF=\"$NEW_VERSION\"/" scripts/sync-values.sh
           echo "Updated sync-values.sh default ref to $NEW_VERSION"
 
       - name: Check for changes
