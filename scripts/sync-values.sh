@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sync values YAML files from upstream OpenChoreo repository
 # Usage: ./scripts/sync-values.sh [tag|commit]
-# Example: ./scripts/sync-values.sh v1.0.0-rc.1
+# Example: ./scripts/sync-values.sh v1.0.0
 
 set -e
 
@@ -9,7 +9,7 @@ set -e
 UPSTREAM_REPO="openchoreo/openchoreo"
 UPSTREAM_PATH="install/k3d/single-cluster"
 UPSTREAM_COMMON_PATH="install/k3d/common"
-DEFAULT_REF="v1.0.0-rc.1"
+DEFAULT_REF="v1.0.0"
 
 # Domain replacements
 UPSTREAM_DOMAIN="openchoreo.localhost"
