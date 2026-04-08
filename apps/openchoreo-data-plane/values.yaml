@@ -1,5 +1,4 @@
-# Helm values for OpenChoreo Data Plane
-# Adapted from upstream install/k3d/single-cluster/values-dp.yaml for openchoreovm.test
+# Helm values for OpenChoreo Data Plane in k3d single-cluster setup
 
 # Gateway configuration for single-cluster setup
 gateway:

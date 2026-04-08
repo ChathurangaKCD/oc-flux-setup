@@ -1,9 +1,9 @@
-# Thunder (Identity Provider) values for openchoreovm.test
-# Adapted from upstream install/k3d/common/values-thunder.yaml
+# Shared Thunder helm values for k3d dev setups.
+# Only overrides that differ from Thunder chart defaults.
 
 fullnameOverride: thunder
 
-# Thunder manages its own HTTPRoute
+# Thunder v0.23.0+ manages its own HTTPRoute
 httproute:
   enabled: true
   parentRefs:
@@ -12,7 +12,7 @@ httproute:
   hostnames:
     - thunder.openchoreovm.test
 
-# Not using nginx ingress
+# Not using nginx ingress in openchoreo
 ingress:
   enabled: false
 
@@ -111,27 +111,18 @@ bootstrap:
             \"schema\": {
               \"username\": {
                 \"type\": \"string\",
-                \"required\": true,
-                \"displayName\": \"Username\"
+                \"required\": true
               },
               \"password\": {
                 \"type\": \"string\",
                 \"required\": false,
-                \"credential\": true,
-                \"displayName\": \"Password\"
+                \"credential\": true
               },
               \"given_name\": {
-                \"type\": \"string\",
-                \"displayName\": \"First Name\"
+                \"type\": \"string\"
               },
               \"family_name\": {
-                \"type\": \"string\",
-                \"displayName\": \"Last Name\"
-              },
-              \"email\": {
-                \"type\": \"string\",
-                \"unique\": true,
-                \"displayName\": \"Email\"
+                \"type\": \"string\"
               }
             }
           }" \
@@ -143,6 +134,8 @@ bootstrap:
         log_info "User schema created successfully"
       fi
 
+      # Returns the ID of an existing user by username, or creates and returns it.
+      # Usage: ensure_user <username> <password> <given_name> <family_name>
       ensure_user() {
         local username="$1" password="$2" given_name="$3" family_name="$4"
         local existing_users user_id response
@@ -150,7 +143,8 @@ bootstrap:
         existing_users=$(curl -s --max-time 10 "${THUNDER_URL}/users")
         if echo "$existing_users" | grep -q "\"username\" *: *\"${username}\""; then
           log_info "User '${username}' already exists, getting ID..." >&2
-          user_id=$(echo "$existing_users" | tr '\n' ' ' | sed 's/" *: *"/":"/g' \
+          user_id=$(echo "$existing_users" | tr '
+' ' ' | sed 's/" *: *"/":"/g' \
             | grep -o "\"username\":\"${username}\"[^}]*\"id\":\"[^\"]*\"\|\"id\":\"[^\"]*\"[^}]*\"username\":\"${username}\"" \
             | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
         else
@@ -163,7 +157,6 @@ bootstrap:
               \"organizationUnit\": \"$ORG_UNIT_ID\",
               \"attributes\": {
                 \"username\": \"${username}\",
-                \"email\": \"${username}\",
                 \"password\": \"${password}\",
                 \"given_name\": \"${given_name}\",
                 \"family_name\": \"${family_name}\"
@@ -179,6 +172,8 @@ bootstrap:
         echo "$user_id"
       }
 
+      # Creates a group with a single member if it does not already exist.
+      # Usage: ensure_group <group_name> <description> <member_user_id>
       ensure_group() {
         local group_name="$1" description="$2" member_id="$3"
         local existing_groups group_members
@@ -216,10 +211,10 @@ bootstrap:
       PE_ID=$(ensure_user "platform-engineer@openchoreo.dev"  "PE@123"    "Platform"  "Engineer")
       SRE_ID=$(ensure_user "sre@openchoreo.dev"               "SRE@123"   "SRE"       "User")
 
-      ensure_group "admins"             "Openchoreo Admins group"             "$ADMIN_ID"
-      ensure_group "developers"         "Openchoreo Developers group"         "$DEVELOPER_ID"
-      ensure_group "platform-engineers" "Openchoreo Platform Engineers group" "$PE_ID"
-      ensure_group "sres"               "Openchoreo SREs group"               "$SRE_ID"
+      ensure_group "admins"             "Admins group"             "$ADMIN_ID"
+      ensure_group "developers"         "Developers group"         "$DEVELOPER_ID"
+      ensure_group "platform-engineers" "Platform Engineers group" "$PE_ID"
+      ensure_group "sres"               "SREs group"               "$SRE_ID"
 
     51-backstage-app.sh: |
       #!/bin/bash
@@ -230,7 +225,8 @@ bootstrap:
       log_info "Checking if application 'Backstage' already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"Backstage"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"name":"Backstage"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"Backstage"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"name":"Backstage"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "Backstage",
@@ -276,22 +272,19 @@ bootstrap:
                     "family_name",
                     "username",
                     "groups"
-                  ]
+                  ],
+                  "scope_claims": {
+                    "groups": [
+                      "groups"
+                    ],
+                    "profile": [
+                      "username",
+                      "given_name",
+                      "family_name",
+                      "picture"
+                    ]
+                  }
                 }
-              },
-              "scope_claims": {
-                "email": [
-                  "email"
-                ],
-                "groups": [
-                  "groups"
-                ],
-                "profile": [
-                  "username",
-                  "given_name",
-                  "family_name",
-                  "picture"
-                ]
               }
             }
           }
@@ -307,6 +300,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application updated successfully"
       else
         log_info "Application does not exist, creating default application..."
@@ -317,6 +311,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Default application created successfully"
       fi
 
@@ -329,7 +324,8 @@ bootstrap:
       log_info "Checking if application 'Customer Portal' already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"customer-portal-client"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"customer-portal-client"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"customer-portal-client"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"customer-portal-client"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "Customer Portal",
@@ -365,6 +361,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application updated successfully"
       else
         log_info "Application 'Customer Portal' does not exist, creating..."
@@ -375,6 +372,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application created successfully"
       fi
 
@@ -387,7 +385,8 @@ bootstrap:
       log_info "Checking if RCA Agent application already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"openchoreo-rca-agent"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"openchoreo-rca-agent"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"openchoreo-rca-agent"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"openchoreo-rca-agent"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "RCA Agent",
@@ -423,6 +422,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "RCA Agent application updated successfully"
       else
         log_info "RCA Agent application does not exist, creating..."
@@ -433,6 +433,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "RCA Agent application created successfully"
       fi
 
@@ -445,7 +446,8 @@ bootstrap:
       log_info "Checking if application 'OpenChoreo CLI' already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"OpenChoreo CLI"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"OpenChoreo CLI"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"OpenChoreo CLI"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"OpenChoreo CLI"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "OpenChoreo CLI",
@@ -488,23 +490,19 @@ bootstrap:
                     "family_name",
                     "username",
                     "groups"
-                  ]
+                  ],
+                  "scope_claims": {
+                    "groups": [
+                      "groups"
+                    ],
+                    "profile": [
+                      "username",
+                      "given_name",
+                      "family_name",
+                      "picture"
+                    ]
+                  }
                 }
-              },
-              "scope_claims": {
-                "email": [
-                  "email"
-                ],
-                "groups": [
-                  "groups"
-                ],
-                "profile": [
-                  "username",
-                  "given_name",
-                  "family_name",
-                  "picture",
-                  "groups"
-                ]
               }
             }
           }
@@ -520,6 +518,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application updated successfully"
       else
         log_info "Application does not exist, creating default CLI application..."
@@ -530,6 +529,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Default CLI application created successfully"
       fi
 
@@ -542,7 +542,8 @@ bootstrap:
       log_info "Checking if system application already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"openchoreo-system-app"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"openchoreo-system-app"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"openchoreo-system-app"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"openchoreo-system-app"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "System Application",
@@ -578,6 +579,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "System application updated successfully"
       else
         log_info "System application does not exist, creating..."
@@ -588,6 +590,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "System application created successfully"
       fi
 
@@ -600,8 +603,11 @@ bootstrap:
       log_info "Checking if application 'User MCP App' already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"User MCP App"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"User MCP App"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
+      # Extract application ID if it exists
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"User MCP App"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"User MCP App"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
 
+      # Define the application payload
       APP_PAYLOAD='{
         "name": "User MCP App",
         "description": "User MCP app to be used by terminals and user facing AI agents",
@@ -674,6 +680,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application updated successfully"
       else
         log_info "Application does not exist, creating default application..."
@@ -684,6 +691,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "User MCP App application created successfully"
       fi
 
@@ -696,8 +704,11 @@ bootstrap:
       log_info "Checking if application 'Service MCP App' already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"Service MCP App"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"Service MCP App"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
+      # Extract application ID if it exists
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"Service MCP App"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"Service MCP App"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
 
+      # Define the application payload
       APP_PAYLOAD='{
           "name": "Service MCP App",
           "description": "Service MCP app to be used by backend services which can securely store the secret",
@@ -731,6 +742,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application updated successfully"
       else
         log_info "Application does not exist, creating default application..."
@@ -741,6 +753,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Service MCP App application created successfully"
       fi
 
@@ -753,7 +766,8 @@ bootstrap:
       log_info "Checking if Workload Publisher application already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"openchoreo-workload-publisher-client"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"openchoreo-workload-publisher-client"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"client_id":"openchoreo-workload-publisher-client"[^}]*"id":"[^"]*"\|"id":"[^"]*"[^}]*"client_id":"openchoreo-workload-publisher-client"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "Workload Publisher",
@@ -789,6 +803,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Workload Publisher application updated successfully"
       else
         log_info "Workload Publisher application does not exist, creating..."
@@ -799,6 +814,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Workload Publisher application created successfully"
       fi
 
@@ -811,7 +827,8 @@ bootstrap:
       log_info "Checking if application 'OpenChoreo Observer Resource Reader' already exists..."
       existing_apps=$(curl -s --max-time 10 "${THUNDER_URL}/applications")
 
-      app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"OpenChoreo Observer Resource Reader"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"OpenChoreo Observer Resource Reader"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
+      app_id=$(echo "$existing_apps" | tr '
+' ' ' | sed 's/" *: *"/":"/g' | grep -o '"name":"OpenChoreo Observer Resource Reader"[^}]*"id":"[^\"]*"\|"id":"[^\"]*"[^}]*"name":"OpenChoreo Observer Resource Reader"' | grep -o '"id":"[^\"]*"' | head -1 | cut -d'"' -f4)
 
       APP_PAYLOAD='{
         "name": "OpenChoreo Observer Resource Reader",
@@ -847,6 +864,7 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "Application updated successfully"
       else
         log_info "Application does not exist, creating default application..."
@@ -857,5 +875,6 @@ bootstrap:
           --max-time 30 \
           --retry 3 \
           --retry-delay 5
+
         log_info "OpenChoreo Observer Resource Reader application created successfully"
       fi

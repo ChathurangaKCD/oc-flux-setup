@@ -1,5 +1,14 @@
-# Helm values for OpenChoreo Observability Plane
-# Adapted from upstream install/k3d/single-cluster/values-op.yaml for openchoreovm.test
+# Helm values for OpenChoreo Observability Plane in k3d single-cluster setup
+
+# Use standalone OpenSearch (not operator-managed cluster)
+openSearch:
+  enabled: false
+  service:
+    type: LoadBalancer
+
+# Disable OpenSearch operator cluster (using standalone instead)
+openSearchCluster:
+  enabled: false
 
 # Observer API - REST API for querying logs and metrics
 observer:
@@ -7,7 +16,12 @@ observer:
   secretName: observer-secret
   http:
     hostnames:
-      - observer.openchoreovm.test
+    - observer.openchoreovm.test
+
+# OpenSearch Dashboards - UI for visualizing logs and data
+openSearchDashboards:
+  service:
+    type: LoadBalancer
 
 security:
   oidc:
@@ -18,7 +32,7 @@ security:
 rca:
   http:
     hostnames:
-      - rca-agent.openchoreovm.test
+    - rca-agent.openchoreovm.test
 
 gateway:
   httpPort: 11080

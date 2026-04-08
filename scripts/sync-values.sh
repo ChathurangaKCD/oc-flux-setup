@@ -1,30 +1,25 @@
 #!/bin/bash
 # Sync values YAML files from upstream OpenChoreo repository
 # Usage: ./scripts/sync-values.sh [tag|commit]
-# Example: ./scripts/sync-values.sh v0.12.0
+# Example: ./scripts/sync-values.sh v1.0.0-rc.1
 
 set -e
 
 # Configuration
 UPSTREAM_REPO="openchoreo/openchoreo"
 UPSTREAM_PATH="install/k3d/single-cluster"
-DEFAULT_REF="v0.17.0"
+UPSTREAM_COMMON_PATH="install/k3d/common"
+DEFAULT_REF="v1.0.0-rc.1"
 
 # Domain replacements
 UPSTREAM_DOMAIN="openchoreo.localhost"
 LOCAL_DOMAIN="openchoreovm.test"
 UPSTREAM_DP_DOMAIN="openchoreoapis.localhost"
-LOCAL_DP_DOMAIN="dp.openchoreovm.test"
+LOCAL_DP_DOMAIN="openchoreoapis.openchoreovm.test"
 
-# Port replacements (simplify external port to match internal)
-UPSTREAM_DP_HTTP_PORT="19080"
-LOCAL_DP_HTTP_PORT="9080"
-UPSTREAM_DP_HTTPS_PORT="19443"
-LOCAL_DP_HTTPS_PORT="9443"
-
-# Control plane port (nginx proxies 8080→18080)
-UPSTREAM_CP_HTTP_PORT="8080"
-LOCAL_CP_HTTP_PORT="18080"
+# Control plane port (k3d maps host:18080 → container:8080, nginx-proxy proxies 8080→18080)
+UPSTREAM_CP_HTTP_PORT_MAP="8080:8080"
+LOCAL_CP_HTTP_PORT_MAP="18080:8080  # nginx-proxy on VM proxies 8080→18080 to strip HSTS/CSP headers"
 
 # Target directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -43,13 +38,14 @@ REF="${1:-$DEFAULT_REF}"
 echo -e "${GREEN}Syncing values from upstream OpenChoreo ${REF}${NC}"
 echo "================================================"
 
-# Function to fetch and transform a values file
+# Function to fetch a file from a given upstream path and write transformed content
 fetch_and_transform() {
-    local upstream_file="$1"
-    local local_file="$2"
-    local plane_name="$3"
+    local upstream_path="$1"
+    local upstream_file="$2"
+    local local_file="$3"
+    local plane_name="$4"
 
-    local url="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${REF}/${UPSTREAM_PATH}/${upstream_file}"
+    local url="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${REF}/${upstream_path}/${upstream_file}"
 
     echo -e "${YELLOW}Fetching ${plane_name}...${NC}"
     echo "  URL: $url"
@@ -62,12 +58,8 @@ fetch_and_transform() {
     fi
 
     # Apply domain replacements
-    content=$(echo "$content" | sed "s/${UPSTREAM_DOMAIN}/${LOCAL_DOMAIN}/g")
     content=$(echo "$content" | sed "s/${UPSTREAM_DP_DOMAIN}/${LOCAL_DP_DOMAIN}/g")
-
-    # Apply port replacements (data plane ports)
-    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTP_PORT}/${LOCAL_DP_HTTP_PORT}/g")
-    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTPS_PORT}/${LOCAL_DP_HTTPS_PORT}/g")
+    content=$(echo "$content" | sed "s/${UPSTREAM_DOMAIN}/${LOCAL_DOMAIN}/g")
 
     # Write to local file
     echo "$content" > "$local_file"
@@ -91,31 +83,37 @@ fetch_and_transform_k3d_config() {
         return 1
     fi
 
-    # Apply control plane port replacement (8080:80 → 18080:80)
-    # nginx proxies external 8080 to k3d 18080
-    content=$(echo "$content" | sed "s/${UPSTREAM_CP_HTTP_PORT}:80/${LOCAL_CP_HTTP_PORT}:80  # nginx proxies 8080→18080/g")
-
-    # Apply data plane port replacements with comments
-    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTP_PORT}:${UPSTREAM_DP_HTTP_PORT}/${LOCAL_DP_HTTP_PORT}:${LOCAL_DP_HTTP_PORT}  # changed from ${UPSTREAM_DP_HTTP_PORT}/g")
-    content=$(echo "$content" | sed "s/${UPSTREAM_DP_HTTPS_PORT}:${UPSTREAM_DP_HTTPS_PORT}/${LOCAL_DP_HTTPS_PORT}:${LOCAL_DP_HTTPS_PORT}  # changed from ${UPSTREAM_DP_HTTPS_PORT}/g")
+    # Remap CP HTTP gateway port: 8080:8080 → 18080:8080 (so nginx-proxy can sit in front)
+    content=$(echo "$content" | sed "s|port: ${UPSTREAM_CP_HTTP_PORT_MAP}|port: ${LOCAL_CP_HTTP_PORT_MAP}|g")
 
     # Write to local file
     echo "$content" > "$local_file"
     echo -e "${GREEN}  Written to: ${local_file}${NC}"
 }
 
-# Fetch each values file
+# Fetch single-cluster values files
 echo ""
-fetch_and_transform "values-cp.yaml" "$APPS_DIR/openchoreo-control-plane/values.yaml" "Control Plane"
+fetch_and_transform "$UPSTREAM_PATH" "values-cp.yaml" \
+    "$APPS_DIR/openchoreo-control-plane/values.yaml" "Control Plane"
 echo ""
-fetch_and_transform "values-dp.yaml" "$APPS_DIR/openchoreo-data-plane/values.yaml" "Data Plane"
+fetch_and_transform "$UPSTREAM_PATH" "values-dp.yaml" \
+    "$APPS_DIR/openchoreo-data-plane/values.yaml" "Data Plane"
 echo ""
-fetch_and_transform "values-bp.yaml" "$APPS_DIR/openchoreo-build-plane/values.yaml" "Build Plane"
+fetch_and_transform "$UPSTREAM_PATH" "values-wp.yaml" \
+    "$APPS_DIR/openchoreo-workflow-plane/values.yaml" "Workflow Plane"
 echo ""
-fetch_and_transform "values-registry.yaml" "$APPS_DIR/openchoreo-build-plane/values-registry.yaml" "Registry"
+fetch_and_transform "$UPSTREAM_PATH" "values-registry.yaml" \
+    "$APPS_DIR/openchoreo-workflow-plane/values-registry.yaml" "Registry"
 echo ""
-fetch_and_transform "values-op.yaml" "$APPS_DIR/openchoreo-observability-plane/values.yaml" "Observability Plane"
+fetch_and_transform "$UPSTREAM_PATH" "values-op.yaml" \
+    "$APPS_DIR/openchoreo-observability-plane/values.yaml" "Observability Plane"
 
+# Fetch shared (common) values
+echo ""
+fetch_and_transform "$UPSTREAM_COMMON_PATH" "values-thunder.yaml" \
+    "$APPS_DIR/thunder/values.yaml" "Thunder"
+
+# Fetch k3d config
 echo ""
 fetch_and_transform_k3d_config
 
@@ -131,10 +129,11 @@ echo "Replacements applied:"
 echo "  Domains:"
 echo "    ${UPSTREAM_DOMAIN} -> ${LOCAL_DOMAIN}"
 echo "    ${UPSTREAM_DP_DOMAIN} -> ${LOCAL_DP_DOMAIN}"
-echo "  Ports:"
-echo "    ${UPSTREAM_CP_HTTP_PORT}:80 -> ${LOCAL_CP_HTTP_PORT}:80 (control plane, k3d config)"
-echo "    ${UPSTREAM_DP_HTTP_PORT} -> ${LOCAL_DP_HTTP_PORT} (data plane)"
-echo "    ${UPSTREAM_DP_HTTPS_PORT} -> ${LOCAL_DP_HTTPS_PORT} (data plane)"
+echo "  k3d ports:"
+echo "    ${UPSTREAM_CP_HTTP_PORT_MAP} -> 18080:8080 (control plane gateway, behind nginx-proxy)"
+echo ""
+echo "Note: Thunder bootstrap scripts contain hardcoded URLs (e.g. http://openchoreo.localhost:8080/...)"
+echo "      that are auto-rewritten via sed. Verify with 'git diff apps/thunder/values.yaml'"
 echo ""
 echo "Review changes with: git diff"
 echo "Commit with: git add -A && git commit -m 'Sync values from upstream ${REF}'"
