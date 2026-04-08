@@ -39,6 +39,13 @@ echo -e "${GREEN}Syncing values from upstream OpenChoreo ${REF}${NC}"
 echo "================================================"
 
 # Function to fetch a file from a given upstream path and write transformed content
+#
+# IMPORTANT: We download to a temp file and apply transforms with `sed -i` instead of
+# piping through `echo "$content" | sed ...`. Bash's `echo` (and many `printf`/`echo`
+# implementations on Linux) interprets backslash escape sequences in some configurations.
+# Files like values-thunder.yaml contain literal `\n` strings inside shell scripts (e.g.
+# `tr '\n' ' '`). If those strings are echoed they get converted to actual newlines and
+# the resulting YAML becomes unparseable. The temp-file approach avoids that entirely.
 fetch_and_transform() {
     local upstream_path="$1"
     local upstream_file="$2"
@@ -50,19 +57,21 @@ fetch_and_transform() {
     echo -e "${YELLOW}Fetching ${plane_name}...${NC}"
     echo "  URL: $url"
 
-    # Fetch the file
-    local content
-    if ! content=$(curl -fsSL "$url" 2>/dev/null); then
+    # Fetch the file directly to disk (no shell variable round-trip)
+    local tmp_file
+    tmp_file=$(mktemp)
+    if ! curl -fsSL "$url" -o "$tmp_file" 2>/dev/null; then
         echo -e "${RED}  ERROR: Failed to fetch ${upstream_file}${NC}"
+        rm -f "$tmp_file"
         return 1
     fi
 
-    # Apply domain replacements
-    content=$(echo "$content" | sed "s/${UPSTREAM_DP_DOMAIN}/${LOCAL_DP_DOMAIN}/g")
-    content=$(echo "$content" | sed "s/${UPSTREAM_DOMAIN}/${LOCAL_DOMAIN}/g")
+    # Apply domain replacements in-place (preserves literal \n and other escape sequences)
+    sed -i.bak "s/${UPSTREAM_DP_DOMAIN}/${LOCAL_DP_DOMAIN}/g" "$tmp_file"
+    sed -i.bak "s/${UPSTREAM_DOMAIN}/${LOCAL_DOMAIN}/g" "$tmp_file"
+    rm -f "${tmp_file}.bak"
 
-    # Write to local file
-    echo "$content" > "$local_file"
+    mv "$tmp_file" "$local_file"
     echo -e "${GREEN}  Written to: ${local_file}${NC}"
 }
 
@@ -76,18 +85,19 @@ fetch_and_transform_k3d_config() {
     echo -e "${YELLOW}Fetching k3d config...${NC}"
     echo "  URL: $url"
 
-    # Fetch the file
-    local content
-    if ! content=$(curl -fsSL "$url" 2>/dev/null); then
+    local tmp_file
+    tmp_file=$(mktemp)
+    if ! curl -fsSL "$url" -o "$tmp_file" 2>/dev/null; then
         echo -e "${RED}  ERROR: Failed to fetch ${upstream_file}${NC}"
+        rm -f "$tmp_file"
         return 1
     fi
 
     # Remap CP HTTP gateway port: 8080:8080 → 18080:8080 (so nginx-proxy can sit in front)
-    content=$(echo "$content" | sed "s|port: ${UPSTREAM_CP_HTTP_PORT_MAP}|port: ${LOCAL_CP_HTTP_PORT_MAP}|g")
+    sed -i.bak "s|port: ${UPSTREAM_CP_HTTP_PORT_MAP}|port: ${LOCAL_CP_HTTP_PORT_MAP}|g" "$tmp_file"
+    rm -f "${tmp_file}.bak"
 
-    # Write to local file
-    echo "$content" > "$local_file"
+    mv "$tmp_file" "$local_file"
     echo -e "${GREEN}  Written to: ${local_file}${NC}"
 }
 
