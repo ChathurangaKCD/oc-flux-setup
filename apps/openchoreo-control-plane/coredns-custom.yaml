@@ -28,8 +28,19 @@ metadata:
   namespace: kube-system
 data:
   openchoreo.override: |
+    # Synthesize A records for *.openchoreovm.test -> 172.18.0.1 (k3d-openchoreo
+    # docker bridge gateway, where the k3d serverlb publishes host ports).
     template IN A openchoreovm.test {
       match "^([^.]+\.)*openchoreovm\.test\.$"
+      answer "{{ .Name }} 60 IN A 172.18.0.1"
+      fallthrough
+    }
+    # Synthesize an A record for host.k3d.internal -> same gateway. k3d was
+    # supposed to inject this via NodeHosts but didn't in this cluster, so
+    # in-cluster references (e.g. the publish-image ClusterWorkflowTemplate
+    # pushing to host.k3d.internal:10082) would otherwise NXDOMAIN.
+    template IN A k3d.internal {
+      match "^host\.k3d\.internal\.$"
       answer "{{ .Name }} 60 IN A 172.18.0.1"
       fallthrough
     }
