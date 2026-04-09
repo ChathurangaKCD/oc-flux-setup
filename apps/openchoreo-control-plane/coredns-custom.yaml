@@ -1,7 +1,26 @@
 ---
-# CoreDNS custom config for k3d cluster
-# Rewrites all *.openchoreovm.test hostnames to host.k3d.internal
-# so pods can reach services exposed via k3d load balancer
+# CoreDNS custom config for k3d single-cluster dev setup.
+#
+# Makes any *.openchoreovm.test hostname resolve to the docker bridge gateway
+# (172.18.0.1 on the k3d-openchoreo network), which is where k3d's loadbalancer
+# forwards host-published ports. This lets pods reach plane services (Thunder,
+# OpenChoreo API, Observer, etc.) via the same URLs a browser on the VM host uses.
+#
+# Why a `template` plugin instead of `rewrite ... host.k3d.internal`:
+#
+#   - The old approach rewrote the query name to host.k3d.internal, hoping a
+#     downstream plugin would resolve it. But CoreDNS's NodeHosts doesn't
+#     contain host.k3d.internal in this cluster (k3d did not inject it), so the
+#     query fell through to the upstream resolver and returned NXDOMAIN.
+#
+#   - `template` lets CoreDNS *synthesize* an A record in-place with a regex
+#     match, which is both simpler and doesn't depend on NodeHosts at all.
+#
+# Why 172.18.0.1: it's the docker bridge gateway of the k3d-openchoreo network.
+# The kgateway/envoy LoadBalancer services hostPort-publish to the VM host via
+# k3d-openchoreo-serverlb, which binds 0.0.0.0 on the VM. From inside a pod the
+# gateway IP is reachable as the docker bridge gateway (host.k3d.internal in
+# k3d's intended design).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,7 +28,8 @@ metadata:
   namespace: kube-system
 data:
   openchoreo.override: |
-    rewrite stop {
-      name regex (.+\.)?openchoreovm\.test host.k3d.internal
-      answer auto
+    template IN A openchoreovm.test {
+      match "^([^.]+\.)*openchoreovm\.test\.$"
+      answer "{{ .Name }} 60 IN A 172.18.0.1"
+      fallthrough
     }
