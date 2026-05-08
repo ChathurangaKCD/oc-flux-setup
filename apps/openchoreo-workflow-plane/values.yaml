@@ -9,3 +9,4 @@ argo-workflows:
     servicePort: 10081
     authModes:
       - server
+
