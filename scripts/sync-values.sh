@@ -9,7 +9,7 @@ set -e
 UPSTREAM_REPO="openchoreo/openchoreo"
 UPSTREAM_PATH="install/k3d/single-cluster"
 UPSTREAM_COMMON_PATH="install/k3d/common"
-DEFAULT_REF="v1.2.0"
+DEFAULT_REF="v1.2.1"
 
 # Domain replacements
 UPSTREAM_DOMAIN="openchoreo.localhost"
